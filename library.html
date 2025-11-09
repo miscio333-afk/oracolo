@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libreria dei Tarocchi - I Tarocchi Italiani</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+    
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    
+    <!-- Splitting CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/splitting@1.0.6/dist/splitting.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --mystic-purple: #2D1B45;
+            --antique-gold: #B8860B;
+            --soft-cream: #F5F5DC;
+            --rich-burgundy: #800020;
+            --muted-teal: #4A6741;
+            --warm-amber: #FFBF00;
+            --charcoal-gray: #36454F;
+        }
+        
+        body {
+            font-family: 'Quattrocento Sans', sans-serif;
+            background: linear-gradient(135deg, var(--mystic-purple) 0%, var(--rich-burgundy) 50%, var(--mystic-purple) 100%);
+            background-attachment: fixed;
+            color: var(--soft-cream);
+            overflow-x: hidden;
+        }
+        
+        .mystical-title {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--antique-gold), var(--warm-amber), var(--antique-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(184, 134, 11, 0.5);
+        }
+        
+        .card-name {
+            font-family: 'MedievalSharp', cursive;
+            color: var(--antique-gold);
+        }
+        
+        .mystical-button {
+            background: linear-gradient(45deg, var(--antique-gold), var(--warm-amber));
+            border: 2px solid var(--antique-gold);
+            color: var(--mystic-purple);
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(184, 134, 11, 0.3);
+        }
+        
+        .mystical-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(184, 134, 11, 0.6);
+            background: linear-gradient(45deg, var(--warm-amber), var(--antique-gold));
+        }
+        
+        .card-library {
+            background: rgba(45, 27, 69, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--antique-gold);
+            border-radius: 20px;
+        }
+        
+        .tarot-card-mini {
+            background: rgba(245, 245, 220, 0.95);
+            border: 2px solid var(--antique-gold);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tarot-card-mini:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(184, 134, 11, 0.3);
+        }
+        
+        .filter-button {
+            background: rgba(184, 134, 11, 0.2);
+            border: 1px solid var(--antique-gold);
+            color: var(--antique-gold);
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .filter-button:hover, .filter-button.active {
+            background: var(--antique-gold);
+            color: var(--mystic-purple);
+        }
+        
+        .search-input {
+            background: rgba(245, 245, 220, 0.95);
+            border: 2px solid var(--antique-gold);
+            border-radius: 25px;
+            padding: 10px 20px;
+            color: var(--mystic-purple);
+        }
+        
+        .search-input::placeholder {
+            color: var(--charcoal-gray);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: rgba(245, 245, 220, 0.98);
+            color: var(--mystic-purple);
+            margin: 2% auto;
+            padding: 30px;
+            border: 3px solid var(--antique-gold);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .close {
+            color: var(--mystic-purple);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: var(--antique-gold);
+        }
+        
+        .particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .tarot-card-large {
+            background: rgba(245, 245, 220, 0.95);
+            border: 3px solid var(--antique-gold);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+        
+        .keywords-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .keyword-tag {
+            background: var(--antique-gold);
+            color: var(--mystic-purple);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .learning-section {
+            background: rgba(45, 27, 69, 0.6);
+            border: 2px solid var(--antique-gold);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 5% auto;
+                padding: 20px;
+                width: 95%;
+            }
+            
+            .tarot-card-mini {
+                width: 120px;
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle Background -->
+    <div class="particle-container" id="particles"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-black bg-opacity-30 backdrop-blur-md border-b border-yellow-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="mystical-title text-2xl">I Tarocchi Italiani</h1>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Home</a>
+                    <a href="reading.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Lettura</a>
+                    <a href="library.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Libreria</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="container mx-auto max-w-7xl">
+            
+            <!-- Header -->
+            <div class="text-center mb-12 fade-in">
+                <h1 class="mystical-title text-5xl md:text-6xl mb-6">Libreria dei Tarocchi</h1>
+                <p class="text-xl text-yellow-200 max-w-3xl mx-auto">
+                    Esplora l'intero mazzo dei 78 tarocchi con interpretazioni dettagliate in stile Art Nouveau
+                </p>
+            </div>
+            
+            <!-- Search and Filter -->
+            <div class="card-library p-6 mb-12 fade-in">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div class="flex flex-wrap gap-3">
+                        <button class="filter-button active" onclick="filterCards('all')">Tutte</button>
+                        <button class="filter-button" onclick="filterCards('major')">Arcani Maggiori</button>
+                        <button class="filter-button" onclick="filterCards('minor')">Arcani Minori</button>
+                        <button class="filter-button" onclick="filterCards('bastoni')">Bastoni</button>
+                        <button class="filter-button" onclick="filterCards('coppe')">Coppe</button>
+                        <button class="filter-button" onclick="filterCards('spade')">Spade</button>
+                        <button class="filter-button" onclick="filterCards('denari')">Denari</button>
+                    </div>
+                    <div>
+                        <input type="text" class="search-input" placeholder="Cerca carte..." id="search-input" oninput="searchCards()">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-12" id="cards-grid">
+                <!-- Cards will be populated by JavaScript -->
+            </div>
+            
+            <!-- Learning Section -->
+            <div class="learning-section fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-8">Guida ai Tarocchi</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="card-name text-2xl mb-4">Arcani Maggiori</h3>
+                        <p class="text-yellow-200 mb-4">
+                            I 22 Arcani Maggiori rappresentano i grandi temi della vita, i cicli di crescita spirituale 
+                            e le esperienze fondamentali del viaggio umano. Ogni carta racconta una storia di 
+                            trasformazione e saggezza.
+                        </p>
+                        <ul class="text-yellow-200 space-y-2">
+                            <li>• <strong>Il Matto</strong> - Nuovi inizi e spontaneità</li>
+                            <li>• <strong>Il Bagatto</strong> - Volontà e manifestazione</li>
+                            <li>• <strong>La Papessa</strong> - Intuizione e misteri</li>
+                            <li>• <strong>L'Imperatrice</strong> - Fertilità e abbondanza</li>
+                            <li>• <strong>La Ruota</strong> - Cicli e destino</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="card-name text-2xl mb-4">Arcani Minori</h3>
+                        <p class="text-yellow-200 mb-4">
+                            I 56 Arcani Minori riflettono le esperienze quotidiane, le sfide pratiche e le emozioni 
+                            della vita di tutti i giorni. Sono divisi in quattro semi corrispondenti agli elementi.
+                        </p>
+                        <ul class="text-yellow-200 space-y-2">
+                            <li>• <strong>Bastoni</strong> - Fuoco, creatività, passione</li>
+                            <li>• <strong>Coppe</strong> - Acqua, emozioni, amore</li>
+                            <li>• <strong>Spade</strong> - Aria, mente, conflitto</li>
+                            <li>• <strong>Denari</strong> - Terra, materialità, carriera</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="card-name text-2xl mb-4 text-center">Come Leggere i Tarocchi</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-yellow-200">
+                        <div class="text-center">
+                            <div class="text-4xl mb-4">🔮</div>
+                            <h4 class="font-bold mb-2">Intuizione</h4>
+                            <p>Lascia che le immagini parlino alla tua intuizione. I tarocchi sono un linguaggio simbolico.</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-4xl mb-4">🎨</div>
+                            <h4 class="font-bold mb-2">Simbolismo</h4>
+                            <p>Ogni simbolo ha un significato. Osserva i colori, i numeri, le espressioni.</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-4xl mb-4">🧘</div>
+                            <h4 class="font-bold mb-2">Contemplazione</h4>
+                            <p>Non affrettare le interpretazioni. Lascia che il significato si riveli nel tempo.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Card Detail Modal -->
+    <div id="card-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <div class="tarot-card-large w-64 h-96 mx-auto mb-4" id="modal-card-image">
+                        <!-- Card image will be inserted here -->
+                    </div>
+                </div>
+                <div>
+                    <h2 class="card-name text-3xl mb-4" id="modal-card-name"></h2>
+                    <div class="mb-4">
+                        <strong>Categoria:</strong> <span id="modal-card-category"></span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3 class="font-bold text-xl mb-2">Significato</h3>
+                        <p id="modal-card-meaning"></p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3 class="font-bold text-xl mb-2">Parole Chiave</h3>
+                        <div class="keywords-section" id="modal-keywords">
+                            <!-- Keywords will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3 class="font-bold text-xl mb-2">Interpretazione Invertita</h3>
+                        <p id="modal-card-reversed"></p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-bold text-xl mb-2">Simbolismo</h3>
+                        <p id="modal-card-symbolism"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="py-12 px-6 border-t border-yellow-600 bg-black bg-opacity-30">
+        <div class="container mx-auto text-center">
+            <p class="text-yellow-200">© 2024 I Tarocchi Italiani - Arte Divinatoria in Stile Art Nouveau</p>
+        </div>
+    </footer>
+    
+    <script src="main.js"></script>
+    <script>
+        // Initialize library page
+        document.addEventListener('DOMContentLoaded', function() {
+            populateCardsGrid();
+            initializeParticles();
+            
+            // Add fade-in animations
+            const fadeElements = document.querySelectorAll('.fade-in');
+            fadeElements.forEach((element, index) => {
+                setTimeout(() => {
+                    element.style.animationDelay = `${index * 0.2}s`;
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

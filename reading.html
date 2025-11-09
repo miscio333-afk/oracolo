@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lettura dei Tarocchi - I Tarocchi Italiani</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+    
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    
+    <!-- Splitting CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/splitting@1.0.6/dist/splitting.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --mystic-purple: #2D1B45;
+            --antique-gold: #B8860B;
+            --soft-cream: #F5F5DC;
+            --rich-burgundy: #800020;
+            --muted-teal: #4A6741;
+            --warm-amber: #FFBF00;
+            --charcoal-gray: #36454F;
+        }
+        
+        body {
+            font-family: 'Quattrocento Sans', sans-serif;
+            background: linear-gradient(135deg, var(--mystic-purple) 0%, var(--rich-burgundy) 50%, var(--mystic-purple) 100%);
+            background-attachment: fixed;
+            color: var(--soft-cream);
+            overflow-x: hidden;
+        }
+        
+        .mystical-title {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--antique-gold), var(--warm-amber), var(--antique-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(184, 134, 11, 0.5);
+        }
+        
+        .card-name {
+            font-family: 'MedievalSharp', cursive;
+            color: var(--antique-gold);
+        }
+        
+        .mystical-button {
+            background: linear-gradient(45deg, var(--antique-gold), var(--warm-amber));
+            border: 2px solid var(--antique-gold);
+            color: var(--mystic-purple);
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(184, 134, 11, 0.3);
+        }
+        
+        .mystical-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(184, 134, 11, 0.6);
+            background: linear-gradient(45deg, var(--warm-amber), var(--antique-gold));
+        }
+        
+        .tarot-card-large {
+            background: rgba(245, 245, 220, 0.95);
+            border: 3px solid var(--antique-gold);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .tarot-card-large:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 45px rgba(184, 134, 11, 0.4);
+        }
+        
+        .reading-container {
+            background: rgba(45, 27, 69, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--antique-gold);
+            border-radius: 20px;
+        }
+        
+        .interpretation-text {
+            background: rgba(245, 245, 220, 0.95);
+            color: var(--mystic-purple);
+            border: 2px solid var(--antique-gold);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 15px 0;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .position-label {
+            font-family: 'Cinzel', serif;
+            color: var(--antique-gold);
+            font-weight: 600;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .keywords-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .keyword-tag {
+            background: var(--antique-gold);
+            color: var(--mystic-purple);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .reading-summary {
+            background: rgba(245, 245, 220, 0.95);
+            color: var(--mystic-purple);
+            border: 2px solid var(--antique-gold);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .tarot-card-large {
+                width: 200px;
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle Background -->
+    <div class="particle-container" id="particles"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-black bg-opacity-30 backdrop-blur-md border-b border-yellow-600">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="mystical-title text-2xl">I Tarocchi Italiani</h1>
+                <div class="flex space-x-6">
+                    <a href="index.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Home</a>
+                    <a href="reading.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Lettura</a>
+                    <a href="library.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Libreria</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="container mx-auto max-w-7xl">
+            
+            <!-- Reading Summary -->
+            <div class="reading-summary fade-in mb-12" id="reading-summary">
+                <div class="text-center mb-6">
+                    <h1 class="mystical-title text-4xl mb-4">La Tua Lettura dei Tarocchi</h1>
+                    <p class="text-lg" id="reading-date"></p>
+                    <p class="text-lg" id="reading-type"></p>
+                </div>
+                
+                <div class="text-center">
+                    <h3 class="card-name text-2xl mb-4">Tema Generale</h3>
+                    <p class="text-lg" id="overall-theme"></p>
+                </div>
+            </div>
+            
+            <!-- Cards Display -->
+            <div class="reading-container p-8 rounded-3xl mb-12 fade-in" id="cards-display">
+                <h2 class="mystical-title text-3xl text-center mb-8">Le Tue Carte</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="cards-grid">
+                    <!-- Cards will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Detailed Interpretations -->
+            <div class="fade-in" id="detailed-interpretations">
+                <h2 class="mystical-title text-3xl text-center mb-8">Interpretazione Dettagliata</h2>
+                
+                <div class="space-y-8" id="interpretations-container">
+                    <!-- Interpretations will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Combined Analysis -->
+            <div class="reading-container p-8 rounded-3xl mt-12 fade-in" id="combined-analysis">
+                <h2 class="mystical-title text-3xl text-center mb-8">Analisi Complessiva</h2>
+                
+                <div class="interpretation-text">
+                    <h3 class="card-name text-2xl mb-4">Messaggio del Cuore</h3>
+                    <p class="text-lg mb-6" id="heart-message"></p>
+                    
+                    <h3 class="card-name text-2xl mb-4">Consigli e Guida</h3>
+                    <p class="text-lg mb-6" id="advice-guidance"></p>
+                    
+                    <h3 class="card-name text-2xl mb-4">Riflessioni</h3>
+                    <div class="space-y-3" id="reflection-questions">
+                        <!-- Reflection questions will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="text-center mt-12 fade-in">
+                <button class="mystical-button px-8 py-4 rounded-full mr-4" onclick="saveCurrentReading()">
+                    Salva Lettura
+                </button>
+                <button class="mystical-button px-8 py-4 rounded-full mr-4" onclick="shareReading()">
+                    Condividi Lettura
+                </button>
+                <button class="mystical-button px-8 py-4 rounded-full" onclick="newReading()">
+                    Nuova Lettura
+                </button>
+            </div>
+            
+            <!-- Reading History -->
+            <div class="reading-container p-8 rounded-3xl mt-12 fade-in" id="reading-history">
+                <h2 class="mystical-title text-3xl text-center mb-8">Cronologia delle Tue Lettura</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="history-grid">
+                    <!-- Reading history will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="py-12 px-6 border-t border-yellow-600 bg-black bg-opacity-30">
+        <div class="container mx-auto text-center">
+            <p class="text-yellow-200">© 2024 I Tarocchi Italiani - Arte Divinatoria in Stile Art Nouveau</p>
+        </div>
+    </footer>
+    
+    <script src="main.js"></script>
+    <script>
+        // Initialize reading page
+        document.addEventListener('DOMContentLoaded', function() {
+            displayCurrentReading();
+            loadReadingHistory();
+            initializeParticles();
+            
+            // Add fade-in animations
+            const fadeElements = document.querySelectorAll('.fade-in');
+            fadeElements.forEach((element, index) => {
+                setTimeout(() => {
+                    element.style.animationDelay = `${index * 0.2}s`;
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
