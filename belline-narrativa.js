@@ -121,15 +121,18 @@ function buildBellineNarrativeAIPrompt() {
         const polLabel = window.bellinePolarityLabel(window.bellinePolarityOf(c));
         const serieName = window.bellineSeriesName(c.series);
         const advice = window.bellineAdvice(c);
-        lines.push(`${i + 1} (${pos}). "${c.name}" — ${polLabel}, serie ${serieName}. ${c.meaning || ''} Consiglio: ${advice}`);
+        const icon = (c.detail && c.detail.icon) ? ` Iconografia: ${c.detail.icon}.` : '';
+        lines.push(`${i + 1} (${pos}). "${c.name}" — ${polLabel}, serie ${serieName}.${icon} ${c.meaning || ''} Consiglio: ${advice}`);
     });
 
     lines.push('');
+    lines.push('Il campo "Iconografia" di ogni carta descrive esattamente cosa raffigura l\'immagine (simboli, figure, scene): usalo PER PRIMA COSA, prima del significato.');
     lines.push('Scrivi una lettura IN ITALIANO, tono mistico ma concreto, strutturata in 4 paragrafi separati da riga vuota:');
-    lines.push('1) Passato — da dove vieni: la carta del passato, come ha plasmato la situazione attuale;');
-    lines.push('2) Presente — dove sei: la carta del presente, cosa stai vivendo adesso e come si aggancia al passato;');
-    lines.push('3) Futuro — dove vai: la carta del futuro, la tendenza che si sta preparando;');
+    lines.push('1) Passato — da dove vieni: APRI descrivendo brevemente cosa raffigurano le immagini delle tre carte estratte, poi analizza la carta del passato e come ha plasmato la situazione attuale;');
+    lines.push('2) Presente — dove sei: PARTI dall\'iconografia della carta del presente (cosa raffigura), poi spiega cosa stai vivendo adesso e come si aggancia al passato;');
+    lines.push('3) Futuro — dove vai: PARTI dall\'iconografia della carta del futuro (cosa raffigura), poi la tendenza che si sta preparando;');
     lines.push('4) Esito — l\'insieme delle tre tappe in luce della Carta Natale del consultante, con un consiglio pratico finale.');
+    lines.push('Per ogni carta del passato, presente e futuro, la spiegazione dell\'immagine (iconografia) viene SEMPRE prima del significato.');
     lines.push('Cita per nome ogni carta, in italiano, senza introdurre arcani o figure inventate. Ogni paragrafo è un blocco di 2-3 frasi scorrevoli senza elenchi puntati.');
 
     return lines.join('\n');

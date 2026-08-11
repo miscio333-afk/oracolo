@@ -1159,7 +1159,7 @@ async function generateBellineAIGeneralMessage() {
                 prompt,
                 model: cfg.model,
                 temperature: 0.8,
-                max_tokens: 1400
+                max_tokens: 1800
             }
         });
 

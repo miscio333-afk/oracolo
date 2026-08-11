@@ -188,7 +188,8 @@ function buildBellineAIPrompt() {
         const advice = window.bellineAdvice(c);
         const title = (positions[i] || {}).title || '';
         const tag = title ? ` (${title})` : '';
-        lines.push(`${i + 1}${tag}. "${c.name}" — ${polLabel}, serie ${serieName}. ${c.meaning || ''} Consiglio: ${advice}`);
+        const icon = (c.detail && c.detail.icon) ? ` Iconografia: ${c.detail.icon}.` : '';
+        lines.push(`${i + 1}${tag}. "${c.name}" — ${polLabel}, serie ${serieName}.${icon} ${c.meaning || ''} Consiglio: ${advice}`);
     });
 
     const pairings = findAllBellinePairings();
@@ -203,13 +204,14 @@ function buildBellineAIPrompt() {
     const drawnCount = bellineDrawn.length;
     lines.push('');
     lines.push(`La stesa contiene esattamente ${drawnCount} carta(e). NON esistono altre carte, posizioni o luci in questa stesa.`);
+    lines.push('Il campo "Iconografia" di ogni carta descrive esattamente cosa raffigura l\'immagine (simboli, figure, scene): usalo PER PRIMA COSA, prima del significato.');
     lines.push('Scrivi una lettura approfondita IN ITALIANO, con tono mistico ma concreto, strutturata in 6-8 paragrafi separati da riga vuota (ogni paragrafo corrisponde a una card):');
-    lines.push('1) Esordio che risponde direttamente alla domanda (o che traccia il quadro generale della stesa se non c\'è domanda);');
+    lines.push('1) Esordio: PARTI SEMPRE dalla spiegazione visiva delle carte estratte — descrivi cosa mostrano le loro immagini (iconografia e simboli), poi rispondi direttamente alla domanda (o traccia il quadro generale della stesa se non c\'è domanda);');
     lines.push('2) Panorama complessivo: polarità dominante e tono generale della stesa;');
     if (drawnCount === 1) {
-        lines.push('3) Analisi della carta estratta: significato, legame con la domanda e cosa suggerisce di fare. Tutto il messaggio ruota SOLO attorno a questa carta: NON citare, spiegare o alludere a carte assenti, posizioni vuote o luci aggiuntive;');
+        lines.push('3) Analisi della carta estratta: descrivi PER PRIMO l\'iconografia (cosa raffigura l\'immagine), poi il significato, il legame con la domanda e cosa suggerisce di fare. Tutto il messaggio ruota SOLO attorno a questa carta: NON citare, spiegare o alludere a carte assenti, posizioni vuote o luci aggiuntive;');
     } else {
-        lines.push(`3,4,5..) Procedi per ciascuna delle ${drawnCount} carte estratte, nell\'ordine: per ciascuna, parla della carta, del suo significato, di come si lega alla domanda e di cosa suggerisce di fare;`);
+        lines.push(`3,4,5..) Procedi per ciascuna delle ${drawnCount} carte estratte, nell\'ordine: per ciascuna, PARTI dall\'iconografia (cosa raffigura l\'immagine), poi spiega il significato, come si lega alla domanda e cosa suggerisce di fare;`);
     }
     lines.push('Ultimo paragrafo) Consiglio pratico finale, concreto e orientato all\'azione.');
     lines.push(`Cita per nome OGNI carta della lista precedente con il suo significato. La stesa conta esattamente ${drawnCount} carta(e): NON creare e NON nominare nessuna carta, seme o figura che non sia nella lista (vietati: arcani, papesse, cavalieri, spade, denari, coppe, bastoni) e NON parlare di posizioni, luci o carte in più di quelle estratte.`);
