@@ -690,9 +690,12 @@ function renderBellineResults() {
 }
 
 // Suspense: il primo tocco sulla carta coperta la gira e rivela il fronte.
-// La carta resta scoperta; dal click non si apre alcuna scheda dettagli.
+// Un secondo tocco su una carta già scoperta apre la scheda di dettaglio.
 function flipBellineCardOnClick(cardEl, card) {
-    if (cardEl.dataset.revealed) return;
+    if (cardEl.dataset.revealed) {
+        displayBellineCard(card);
+        return;
+    }
     if (!cardEl.querySelector('.card-flip')) {
         revealBellineCardFace(cardEl, card);
         bellineTryRenderAdvice();
@@ -912,6 +915,31 @@ function displayBellineCard(card) {
         </div>`
         : '';
 
+    // Sezioni estese dal dataset di dettaglio (iconografia, psicologia, ritratto, direzione, esito)
+    const detail = card.detail || {};
+    const detailSections = [
+        { title: 'Iconografia e Simboli', key: 'icon' },
+        { title: 'Psicologia Profonda', key: 'psych' },
+        { title: 'Chi è / Stato', key: 'portrait' },
+        { title: 'Direzione · Evoluzione', key: 'direction' },
+        { title: 'Riuscita · Esito', key: 'outcome' }
+    ].map((s) => detail[s.key]
+        ? `<div class="bg-yellow-50 rounded-xl p-4 mb-3">
+            <strong class="block mb-1">${s.title}</strong>
+            <p class="text-sm">${detail[s.key]}</p>
+        </div>`
+        : '').join('');
+
+    const detailConsiglioHtml = detail.advice
+        ? `<div class="bg-yellow-50 rounded-xl p-4 mb-3">
+            <strong class="block mb-1">Consiglio</strong>
+            <p class="text-sm">${detail.advice}</p>
+        </div>`
+        : `<div class="bg-yellow-50 rounded-xl p-4">
+            <strong class="block mb-1">Consiglio</strong>
+            <p class="text-sm">${adviceText}</p>
+        </div>`;
+
     overlay.innerHTML = `
         <div class="bg-cream text-purple-900 max-w-3xl w-full rounded-3xl border-4 border-yellow-600 p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
             <button class="absolute top-3 right-5 text-3xl text-purple-900 font-bold hover:text-yellow-600" onclick="this.closest('.fixed').remove()">&times;</button>
@@ -923,6 +951,7 @@ function displayBellineCard(card) {
                     ${associationHtml}
                     <p class="text-gray-800 mb-4">${card.meaning}</p>
                     ${keywordsHtml}
+                    ${detailSections}
                     <div class="bg-yellow-50 rounded-xl p-4 mb-3">
                         <strong class="block mb-1">La Luce di questa serie</strong>
                         <p class="text-sm">${serieBullet}</p>
@@ -931,10 +960,7 @@ function displayBellineCard(card) {
                         <strong class="block mb-1">Per la tua lettura</strong>
                         <p class="text-sm">${waytext}</p>
                     </div>
-                    <div class="bg-yellow-50 rounded-xl p-4">
-                        <strong class="block mb-1">Consiglio</strong>
-                        <p class="text-sm">${adviceText}</p>
-                    </div>
+                    ${detailConsiglioHtml}
                     ${renderCardPairs(card)}
                 </div>
             </div>
