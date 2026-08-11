@@ -10,3 +10,7 @@ shots/
 
 # Dipendenze (se mai installate localmente)
 node_modules/
+.vercel
+
+# Artefatti del runner Playwright
+.playwright-cli/

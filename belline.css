@@ -449,6 +449,58 @@
     box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
 }
 
+/* ===== Azioni in navbar: crediti + account ===== */
+
+.nav-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-left: auto;
+    min-height: 44px;
+}
+
+.nav-actions .belline-wallet-chip {
+    margin-bottom: 0;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    background: rgba(24, 15, 45, 0.55);
+}
+
+.nav-actions .belline-account-host {
+    margin: 0;
+    display: inline-flex;
+}
+
+.nav-actions .belline-account-bar {
+    padding: 0.35rem 0.8rem;
+    background: rgba(24, 15, 45, 0.55);
+    border-style: solid;
+    border-radius: 999px;
+}
+
+.nav-actions .belline-account-hint {
+    display: none;
+}
+
+.nav-actions .belline-account-input {
+    min-width: 12rem;
+}
+
+/* Seconda riga dedicata su mobile (nav già piena di link) */
+@media (max-width: 768px) {
+    .nav-actions {
+        flex-basis: 100%;
+        justify-content: center;
+        margin-left: 0;
+        margin-top: 0.4rem;
+        order: 5;
+    }
+    .site-nav:has(.nav-actions) + main {
+        padding-top: 12.5rem;
+    }
+}
+
 .belline-wallet-overlay {
     position: fixed;
     inset: 0;

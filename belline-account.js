@@ -34,9 +34,21 @@
         host.id = 'belline-account-host';
         host.className = 'belline-account-host';
 
-        var chip = document.getElementById('belline-wallet-chip');
-        if (chip && chip.parentNode) {
-            chip.parentNode.insertBefore(host, chip.nextSibling);
+        // Nella navbar, subito dopo il chip crediti.
+        var nav = document.getElementById('belline-nav-actions');
+        if (nav) {
+            var chip = document.getElementById('belline-wallet-chip');
+            if (chip && chip.parentNode === nav) {
+                nav.insertBefore(host, chip.nextSibling);
+            } else {
+                nav.appendChild(host);
+            }
+            return host;
+        }
+
+        var chip2 = document.getElementById('belline-wallet-chip');
+        if (chip2 && chip2.parentNode) {
+            chip2.parentNode.insertBefore(host, chip2.nextSibling);
         } else {
             var panel = document.querySelector('.setup-panel');
             if (panel) panel.appendChild(host);

@@ -22,6 +22,7 @@
 
     <!-- Design system condiviso -->
     <link rel="stylesheet" href="styles.css?v=16">
+    <link rel="stylesheet" href="belline.css?v=27">
 
     <!-- Sfondo video full-screen -->
     <style>
@@ -67,7 +68,7 @@
     <!-- Navigation -->
     <nav class="site-nav fixed top-0 w-full z-50">
         <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
-            <div class="flex justify-between items-center gap-4">
+            <div class="flex flex-wrap justify-between items-center gap-4">
                 <h1 class="nav-brand text-xl sm:text-2xl hidden min-[380px]:block">L'Oracolo di Belline</h1>
                 <div class="flex justify-center space-x-3 sm:space-x-6 text-sm sm:text-base">
                     <a href="index.html" class="nav-link whitespace-nowrap">Belline</a>
@@ -76,6 +77,7 @@
                     <a href="natale.html" class="nav-link whitespace-nowrap">Carta Natale</a>
                     <a href="pricing.html" class="nav-link whitespace-nowrap" aria-current="page">Piani</a>
                 </div>
+                <div id="belline-nav-actions" class="nav-actions"></div>
             </div>
         </div>
     </nav>
@@ -134,7 +136,8 @@
     <script src="belline-backend.js?v=4"></script>
     <script src="belline.js?v=6"></script>
     <script src="belline-common.js?v=25"></script>
-    <script src="belline-wallet.js?v=3"></script>
+    <script src="belline-wallet.js?v=4"></script>
+    <script src="belline-account.js?v=3"></script>
     <script src="belline-pricing.js?v=2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {

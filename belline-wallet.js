@@ -146,12 +146,19 @@
     function ensureAnchor() {
         if (document.getElementById('belline-wallet-chip')) return document.getElementById('belline-wallet-chip');
 
-        var panel = document.querySelector('.setup-panel');
         var chip = document.createElement('div');
         chip.id = 'belline-wallet-chip';
         chip.className = 'belline-wallet-chip';
         chip.setAttribute('aria-live', 'polite');
 
+        // Nella navbar, come primo elemento delle azioni (chip + account).
+        var nav = document.getElementById('belline-nav-actions');
+        if (nav) {
+            nav.insertBefore(chip, nav.firstChild);
+            return chip;
+        }
+
+        var panel = document.querySelector('.setup-panel');
         if (panel) {
             panel.insertBefore(chip, panel.firstChild);
         } else {
@@ -168,12 +175,10 @@
     function render() {
         var chip = ensureAnchor();
         var st = getState();
-        var c = cost();
         var total = dailyAllowance();
         chip.innerHTML =
             '<span class="belline-wallet-coin" aria-hidden="true">🪙</span> ' +
-            '<strong>' + st.remaining + '</strong>/' + total + ' crediti oggi' +
-            '<span class="belline-wallet-cost">prossima stesa: ' + c + '</span>';
+            '<strong>' + st.remaining + '</strong>/' + total + ' crediti oggi';
 
         if (st.remaining <= 0) chip.classList.add('is-empty');
         else chip.classList.remove('is-empty');
