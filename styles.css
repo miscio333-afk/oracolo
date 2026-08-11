@@ -251,16 +251,32 @@ button, a, input, select {
 .nav-link {
     position: relative;
     color: rgba(244, 239, 221, 0.78);
+    font-family: 'Cinzel', serif;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    font-size: 0.82rem;
+    font-size: 0.7rem;
     padding: 13px 2px;
     transition: color 0.25s ease;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+}
+
+.nav-link--stack {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    line-height: 1.15;
+}
+
+.nav-link--stack .nav-free {
+    font-family: inherit;
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: #e14d5a;
 }
 
 .nav-link:hover {
@@ -1466,8 +1482,12 @@ select.natal-input {
     }
 
     .nav-link {
-        font-size: 0.72rem;
+        font-size: 0.6rem;
         letter-spacing: 0.02em;
+    }
+
+    .nav-link--stack .nav-free {
+        font-size: 0.48rem;
     }
 }
 
