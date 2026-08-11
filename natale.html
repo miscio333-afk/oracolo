@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#150D26">
+    <title>La Tua Carta Natale — L'Oracolo di Belline</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { cream: '#F8F4E3' } } }
+        };
+    </script>
+
+    <!-- Design system condiviso -->
+    <link rel="stylesheet" href="styles.css?v=15">
+</head>
+<body>
+    <!-- Particle Background -->
+    <div class="particle-container" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="site-nav fixed top-0 w-full z-50">
+        <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div class="flex justify-between items-center gap-4">
+                <h1 class="nav-brand text-xl sm:text-2xl hidden min-[380px]:block">L'Oracolo di Belline</h1>
+                <div class="flex justify-center space-x-3 sm:space-x-6 text-sm sm:text-base">
+                    <a href="index.html" class="nav-link whitespace-nowrap">Belline</a>
+                    <a href="stesa.html" class="nav-link whitespace-nowrap">Stesa</a>
+                    <a href="narrativa.html" class="nav-link whitespace-nowrap">Passato · Presente · Futuro</a>
+                    <a href="natale.html" class="nav-link whitespace-nowrap" aria-current="page">Carta Natale</a>
+                    <a href="pricing.html" class="nav-link whitespace-nowrap">Piani</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="container mx-auto max-w-7xl">
+
+            <!-- Header -->
+            <div class="text-center mb-12 fade-in">
+                <h1 class="mystical-title text-5xl md:text-6xl mb-6">La Tua Carta Natale</h1>
+                <p class="text-xl text-yellow-200 max-w-3xl mx-auto">
+                    La Luce di nascita della tradizione italiana: la carta personale che ti accompagna per tutta la vita.
+                </p>
+            </div>
+
+            <!-- Natal Calculator -->
+            <div class="reading-area p-6 sm:p-8 rounded-3xl mb-12 fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-8">Calcolo della Luce di nascita</h2>
+                <p class="text-yellow-200 text-center max-w-2xl mx-auto mb-6">
+                    Somma il giorno e il mese reali al tuo anno ridotto a cifra singola. Se superi le 52, sottrai 52.
+                </p>
+
+                <div class="flex flex-wrap justify-center gap-4 mb-6">
+                    <label class="flex flex-col items-start gap-1 text-yellow-200">
+                        <span>Giorno</span>
+                        <input type="number" id="natal-day" class="natal-input w-28" min="1" max="31" placeholder="17">
+                    </label>
+                    <label class="flex flex-col items-start gap-1 text-yellow-200">
+                        <span>Mese</span>
+                        <input type="number" id="natal-month" class="natal-input w-28" min="1" max="12" placeholder="6">
+                    </label>
+                    <label class="flex flex-col items-start gap-1 text-yellow-200">
+                        <span>Anno</span>
+                        <input type="number" id="natal-year" class="natal-input w-32" min="1900" max="2100" placeholder="1991">
+                    </label>
+                </div>
+
+                <div class="text-center mb-6">
+                    <button class="mystical-button px-6 py-2 rounded-full" onclick="calculateNatalCard()">Calcola la tua Carta</button>
+                </div>
+
+                <div id="natal-top-preview" class="mt-4 text-center"></div>
+                <div id="natal-result" class="mt-8 text-center hidden"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer py-12 px-6 text-center">
+        <p class="footer-text">© 2026 L'Oracolo di Belline - Arte Divinatoria in Stile Art Nouveau</p>
+    </footer>
+
+    <script src="belline.js?v=6"></script>
+    <script src="belline-common.js?v=25"></script>
+    <script src="belline-natale.js?v=6"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeBellineParticles();
+            initializeMagicCursorHalo();
+        });
+    </script>
+</body>
+</html>

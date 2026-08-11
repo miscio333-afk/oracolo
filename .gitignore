@@ -1,0 +1,12 @@
+# Chiavi API locali (mai committare)
+config.local.js
+
+# Screenshot e risorse generate
+shots/
+
+# File di sistema macOS
+.DS_Store
+**/.DS_Store
+
+# Dipendenze (se mai installate localmente)
+node_modules/

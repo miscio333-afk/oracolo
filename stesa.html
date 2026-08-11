@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#150D26">
+    <title>Stesa di Belline — L'Oracolo di Belline</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { cream: '#F8F4E3' } } }
+        };
+    </script>
+
+    <!-- Design system condiviso -->
+    <link rel="stylesheet" href="styles.css?v=15">
+    <!-- Regole delle carte e della lettura -->
+    <link rel="stylesheet" href="belline.css?v=26">
+
+    <!-- Sfondo video full-screen -->
+    <style>
+        .bg-video {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .bg-video__media {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .bg-video__overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(120% 92% at 50% 42%, transparent 52%, rgba(7, 3, 15, 0.55) 100%),
+                linear-gradient(180deg, rgba(21, 13, 38, 0.58) 0%, rgba(21, 13, 38, 0.4) 40%, rgba(21, 13, 38, 0.62) 100%);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .bg-video { display: none; }
+            .bg-video__overlay { display: none; }
+        }
+        /* Pannello setup: più trasparente per vedere lo sfondo video */
+        .setup-panel {
+            background: rgba(24, 15, 44, 0.4);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sfondo video full-screen -->
+    <div class="bg-video" aria-hidden="true">
+        <video id="bg-video" class="bg-video__media" src="resources/videos/webm/sfondo-001.webm" type="video/webm"
+            autoplay muted loop playsinline preload="auto"
+            poster="resources/backgrounds/mystical_bg.png"></video>
+    </div>
+    <div class="bg-video__overlay" aria-hidden="true"></div>
+
+    <!-- Particle Background -->
+    <div class="particle-container" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="site-nav fixed top-0 w-full z-50">
+        <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div class="flex justify-between items-center gap-4">
+                <h1 class="nav-brand text-xl sm:text-2xl hidden min-[380px]:block">L'Oracolo di Belline</h1>
+                <div class="flex justify-center space-x-3 sm:space-x-6 text-sm sm:text-base">
+                    <a href="index.html" class="nav-link whitespace-nowrap">Belline</a>
+                    <a href="stesa.html" class="nav-link whitespace-nowrap" aria-current="page">Stesa</a>
+                    <a href="narrativa.html" class="nav-link whitespace-nowrap">Stesa Narrativa</a>
+                    <a href="natale.html" class="nav-link whitespace-nowrap">Carta Natale</a>
+                    <a href="pricing.html" class="nav-link whitespace-nowrap">Piani</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="container mx-auto max-w-7xl">
+
+            <!-- Header -->
+            <div class="text-center mb-12 fade-in">
+                <h1 class="mystical-title text-5xl md:text-6xl mb-6">Stesa di Belline</h1>
+                <p class="text-xl text-yellow-200 max-w-3xl mx-auto">
+                    Forma una domanda e lascia che le 52 Luci dell'oracolo ti rispondano con una stesa libera.
+                </p>
+            </div>
+
+            <!-- Reading Setup -->
+            <div class="reading-area setup-panel p-6 sm:p-8 rounded-3xl mb-12 fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-8">Preparazione della Stesa</h2>
+
+                <div class="mb-8">
+                    <div class="text-center mb-4">
+                        <button type="button" class="guide-toggle" id="belline-guide-toggle">
+                            <span class="guide-arrow">▾</span> Come formulare una buona domanda?
+                        </button>
+                    </div>
+
+                    <div class="guide-panel" id="belline-guide">
+                        <div class="max-w-3xl mx-auto space-y-3 mb-6">
+                            <div class="guide-note">
+                                <strong>Privilegia l'evoluzione.</strong> Evita le domande a risposta secca ("sì" o "no") e
+                                chiedi come si evolverà una situazione o qual è la natura di un sentimento.
+                            </div>
+                            <div class="guide-note">
+                                <strong>Meno è meglio.</strong> Una domanda ben posta dà una risposta chiara anche con una
+                                sola carta. Tirare troppe carte spesso segnala una domanda confusa, non una risposta più precisa.
+                            </div>
+                            <div class="guide-note">
+                                <strong>Precisione e chiarezza.</strong> Rifletti bene prima di procedere: la terminologia giusta
+                                rende la consultazione più intelligente, utile e profonda.
+                            </div>
+                            <div class="guide-note">
+                                <strong>Universalità.</strong> Questi principi valgono anche per il Tarocco, le Rune o altri
+                                oracoli: in sintesi, "tutto è nella domanda".
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <label class="block text-yellow-200 mb-2" for="belline-question">Formula la tua domanda</label>
+                        <input type="text" id="belline-question" class="natal-input w-full max-w-xl mx-auto block text-center"
+                            placeholder="Es. Come si evolverà la mia relazione nei prossimi mesi?">
+                    </div>
+
+                    <div class="mt-6">
+                        <p class="text-center text-sm text-yellow-100 mb-4">
+                            Oppure scegli un esempio tra le domande ben formulate:
+                        </p>
+                        <div id="belline-question-examples"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-6">
+                    <label class="flex items-center gap-2 text-yellow-200">
+                        <span>Numero di carte:</span>
+                        <select id="belline-count" class="natal-input">
+                            <option value="1">1</option>
+                            <option value="3" selected>3</option>
+                            <option value="7">7</option>
+                        </select>
+                    </label>
+                    <label class="flex items-center gap-2 text-yellow-200">
+                        <input type="checkbox" id="belline-blue" class="w-5 h-5 accent-yellow-500" checked>
+                        <span>Includi la Carta Blu</span>
+                    </label>
+                </div>
+
+                <div class="deck-area flex justify-center items-center mb-6">
+                    <div class="belline-card w-36 sm:w-44 aspect-[9/16] flex items-center justify-center" onclick="startBellineReading()" id="belline-deck" role="button" tabindex="0" aria-label="Mescola il mazzo e rivela le luci">
+                        <img src="resources/belline/card_dorso.webp" alt="Dorso del mazzo" class="w-full h-full object-cover rounded-[16px] pointer-events-none">
+                    </div>
+                </div>
+
+                <div class="flex justify-center mb-3">
+                    <div class="belline-shuffle-track" id="belline-shuffle-track" style="display: none;">
+                        <div class="belline-shuffle-fill" id="belline-shuffle-fill"></div>
+                    </div>
+                </div>
+
+                <p class="text-center text-yellow-200 mb-2" id="belline-status">
+                    Tieni premuto sul mazzo e muovi il cursore per mescolarlo con la tua energia
+                </p>
+            </div>
+
+            <!-- Drawn Cards -->
+            <div class="mb-12" id="belline-results" style="display: none;">
+                <h2 class="mystical-title title-magic text-4xl text-center mb-8"><span class="title-spark" aria-hidden="true">✦</span> LE LUCI ESTRATTE <span class="title-spark" aria-hidden="true">✦</span></h2>
+                <p class="belline-cover-hint" id="belline-cover-hint">Tocca le carte per scoprirle una a una</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10" id="belline-grid">
+                    <!-- Cards filled by JS -->
+                </div>
+
+                <!-- Advice -->
+                <div class="reading-area p-6 sm:p-8 rounded-3xl fade-in">
+                    <div class="flex flex-col items-center mb-6">
+                        <p class="advice-kicker" aria-hidden="true">✦ L'Oracolo Risponde ✦</p>
+                        <h3 class="card-name text-2xl text-center">Messaggio Generale</h3>
+                        <button class="mystical-button px-6 py-3 rounded-full mt-4" id="belline-speak-btn" onclick="speakBellineAdvice()" disabled>
+                            🔊 Ascolta il messaggio
+                        </button>
+                    </div>
+                    <div class="advice-paragraph-grid" id="belline-advice" aria-live="polite"></div>
+
+                    <div class="text-center gold-separator mb-3" aria-hidden="true">✦ ✦ ✦</div>
+                    <h4 class="card-name text-xl text-center mb-6">Dettaglio delle Luci</h4>
+                    <div class="advice-cards-box" id="belline-advice-cards"></div>
+
+                    <div class="text-center">
+                        <button class="mystical-button px-8 py-4 rounded-full" onclick="newBellineReading()">Nuova Lettura</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Follow-up: domande per una nuova consultazione (separato dal messaggio) -->
+            <div id="belline-followup" class="reading-area followup-panel" style="display: none;"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer py-12 px-6 text-center">
+        <p class="footer-text">© 2026 L'Oracolo di Belline - Arte Divinatoria in Stile Art Nouveau</p>
+    </footer>
+
+    <button id="bg-audio-toggle" class="mystical-button fixed bottom-6 right-6 z-50 px-5 py-2.5 rounded-full shadow-lg"
+            type="button" aria-pressed="false">🔊 Attiva audio</button>
+
+    <script src="config.local.js?v=4"></script>
+    <script src="config.deploy.js?v=1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="belline-backend.js?v=4"></script>
+    <script src="belline.js?v=6"></script>
+    <script src="belline-common.js?v=25"></script>
+    <script src="belline-wallet.js?v=3"></script>
+    <script src="belline-history.js?v=3"></script>
+    <script src="belline-account.js?v=2"></script>
+    <script src="belline-stesa.js?v=6"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeBellineParticles();
+            initializeMagicCursorHalo();
+
+            const vid = document.getElementById('bg-video');
+            const btn = document.getElementById('bg-audio-toggle');
+            if (vid && btn) {
+                btn.addEventListener('click', function() {
+                    const on = !btn.classList.contains('is-on');
+                    vid.muted = !on;
+                    if (on) vid.play().catch(function(){});
+                    btn.classList.toggle('is-on', on);
+                    btn.setAttribute('aria-pressed', on);
+                    btn.textContent = on ? '🔇 Disattiva audio' : '🔊 Attiva audio';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

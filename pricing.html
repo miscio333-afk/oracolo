@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#150D26">
+    <title>Piani · L'Oracolo di Belline</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { cream: '#F8F4E3' } } }
+        };
+    </script>
+
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+
+    <!-- Design system condiviso -->
+    <link rel="stylesheet" href="styles.css?v=16">
+
+    <!-- Sfondo video full-screen -->
+    <style>
+        .bg-video {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .bg-video__media {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .bg-video__overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(120% 92% at 50% 42%, transparent 52%, rgba(7, 3, 15, 0.55) 100%),
+                linear-gradient(180deg, rgba(21, 13, 38, 0.58) 0%, rgba(21, 13, 38, 0.4) 40%, rgba(21, 13, 38, 0.62) 100%);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .bg-video { display: none; }
+            .bg-video__overlay { display: none; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Sfondo video full-screen -->
+    <div class="bg-video" aria-hidden="true">
+        <video id="bg-video" class="bg-video__media" src="resources/videos/webm/sfondo.webm" type="video/webm"
+            autoplay muted loop playsinline preload="auto"
+            poster="resources/backgrounds/mystical_bg.png"></video>
+    </div>
+    <div class="bg-video__overlay" aria-hidden="true"></div>
+
+    <!-- Particle Background -->
+    <div class="particle-container" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="site-nav fixed top-0 w-full z-50">
+        <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div class="flex justify-between items-center gap-4">
+                <h1 class="nav-brand text-xl sm:text-2xl hidden min-[380px]:block">L'Oracolo di Belline</h1>
+                <div class="flex justify-center space-x-3 sm:space-x-6 text-sm sm:text-base">
+                    <a href="index.html" class="nav-link whitespace-nowrap">Belline</a>
+                    <a href="stesa.html" class="nav-link whitespace-nowrap">Stesa</a>
+                    <a href="narrativa.html" class="nav-link whitespace-nowrap">Passato · Presente · Futuro</a>
+                    <a href="natale.html" class="nav-link whitespace-nowrap">Carta Natale</a>
+                    <a href="pricing.html" class="nav-link whitespace-nowrap" aria-current="page">Piani</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="container mx-auto max-w-7xl">
+
+            <!-- Header -->
+            <div class="text-center mb-12 fade-in">
+                <h1 class="mystical-title title-magic text-4xl md:text-5xl mb-6">✦ Scegli il tuo cammino</h1>
+                <p class="text-xl text-yellow-200 max-w-3xl mx-auto">
+                    L'Oracolo di Belline è gratuito ogni giorno. Quando senti il richiamo delle Luci,
+                    apri il Club o la via del Lettore Esperto: in questa versione demo il piano scelto
+                    si attiva subito, senza pagamenti, e puoi provare e tornare indietro quando vuoi.
+                </p>
+            </div>
+
+            <!-- Pricing -->
+            <section class="reading-area p-6 sm:p-8 rounded-3xl fade-in" aria-labelledby="pricing-title-dedicated">
+                <h2 id="pricing-title-dedicated" class="mystical-title text-3xl text-center mb-8">I Piani del Cammino</h2>
+                <div id="belline-pricing-root"></div>
+            </section>
+
+            <!-- Note -->
+            <div class="reading-area p-6 sm:p-8 rounded-3xl mt-10 fade-in">
+                <h2 class="mystical-title text-2xl text-center mb-4">Cosa cambia per te</h2>
+                <div class="max-w-3xl mx-auto space-y-4 text-yellow-100/90 text-sm sm:text-base">
+                    <p><strong class="text-amber-300">Ascolta il messaggio</strong> — il messaggio lettore con la voce
+                    AI (ElevenLabs) è riservato a <em>Club</em> ed <em>Esperto</em>. Sul piano Free puoi sempre
+                    ascoltare con le voci di sistema del tuo dispositivo, senza costo.</p>
+                    <p><strong class="text-amber-300">I crediti</strong> — una Carta costa 1 credito; ogni visione
+                    costa tanti crediti quante sono le luci estratte (il Carta Blu aggiunge 1 credito, ed è
+                    inclusa per il Club). In demo il Free regala 4 crediti al giorno, il Club 8, l'Esperto 12:
+                    i 120/300 al mese dei piani reali arriveranno con i pagamenti.</p>
+                    <p><strong class="text-amber-300">Lo storico</strong> — il Free conserva le ultime 5 letture;
+                    con un piano pagante la tua storia di letture è illimitata.</p>
+                    <p><strong class="text-amber-300">Sta arrivando</strong> — i pagamenti reali e i pack di crediti
+                    (50 · 100 · 250) arriveranno a breve. Oggi la scelta è una simulazione per provare il cammino.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer py-12 px-6 text-center">
+        <p class="footer-text">© 2026 L'Oracolo di Belline - Arte Divinatoria in Stile Art Nouveau</p>
+    </footer>
+
+    <button id="bg-audio-toggle" class="mystical-button fixed bottom-6 right-6 z-50 px-5 py-2.5 rounded-full shadow-lg"
+            type="button" aria-pressed="false">🔊 Attiva audio</button>
+
+    <script src="config.local.js?v=4"></script>
+    <script src="config.deploy.js?v=1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="belline-backend.js?v=4"></script>
+    <script src="belline.js?v=6"></script>
+    <script src="belline-common.js?v=25"></script>
+    <script src="belline-wallet.js?v=3"></script>
+    <script src="belline-pricing.js?v=2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeBellineParticles();
+            initializeMagicCursorHalo();
+            if (window.bellinePricing) {
+                window.bellinePricing.render(document.getElementById('belline-pricing-root'));
+            }
+
+            const vid = document.getElementById('bg-video');
+            const btn = document.getElementById('bg-audio-toggle');
+            if (vid && btn) {
+                btn.addEventListener('click', function() {
+                    const on = !btn.classList.contains('is-on');
+                    vid.muted = !on;
+                    if (on) vid.play().catch(function(){});
+                    btn.classList.toggle('is-on', on);
+                    btn.setAttribute('aria-pressed', on);
+                    btn.textContent = on ? '🔇 Disattiva audio' : '🔊 Attiva audio';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

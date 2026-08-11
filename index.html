@@ -3,311 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>I Tarocchi Italiani - Lettura dei Tarocchi in Stile Art Nouveau</title>
-    
+    <meta name="theme-color" content="#150D26">
+    <title>L'Oracolo di Belline</title>
+
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
-    
-    <!-- Core Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
-    <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
-    
-    <!-- Splitting CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/splitting@1.0.6/dist/splitting.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { cream: '#F8F4E3' } } }
+        };
+    </script>
+
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+
+    <!-- Design system condiviso -->
+    <link rel="stylesheet" href="styles.css?v=16">
+
+    <!-- Sfondo video full-screen -->
     <style>
-        :root {
-            --mystic-purple: #2D1B45;
-            --antique-gold: #B8860B;
-            --soft-cream: #F5F5DC;
-            --rich-burgundy: #800020;
-            --muted-teal: #4A6741;
-            --warm-amber: #FFBF00;
-            --charcoal-gray: #36454F;
-        }
-        
-        body {
-            font-family: 'Quattrocento Sans', sans-serif;
-            background: linear-gradient(135deg, var(--mystic-purple) 0%, var(--rich-burgundy) 50%, var(--mystic-purple) 100%);
-            background-attachment: fixed;
-            color: var(--soft-cream);
-            overflow-x: hidden;
-        }
-        
-        .mystical-title {
-            font-family: 'Cinzel', serif;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--antique-gold), var(--warm-amber), var(--antique-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 30px rgba(184, 134, 11, 0.5);
-        }
-        
-        .card-name {
-            font-family: 'MedievalSharp', cursive;
-            color: var(--antique-gold);
-        }
-        
-        .mystical-button {
-            background: linear-gradient(45deg, var(--antique-gold), var(--warm-amber));
-            border: 2px solid var(--antique-gold);
-            color: var(--mystic-purple);
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(184, 134, 11, 0.3);
-        }
-        
-        .mystical-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(184, 134, 11, 0.6);
-            background: linear-gradient(45deg, var(--warm-amber), var(--antique-gold));
-        }
-        
-        .tarot-card {
-            background: rgba(245, 245, 220, 0.95);
-            border: 3px solid var(--antique-gold);
-            border-radius: 15px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        .tarot-card:hover {
-            transform: translateY(-10px) rotateY(5deg);
-            box-shadow: 0 20px 40px rgba(184, 134, 11, 0.4);
-        }
-        
-        .tarot-card.flipped {
-            transform: rotateY(180deg);
-        }
-        
-        .card-back {
-            background: linear-gradient(45deg, var(--mystic-purple), var(--rich-burgundy));
-            background-image: url('resources/backgrounds/mystical_bg.png');
-            background-size: cover;
-            background-position: center;
-        }
-        
-        .reading-area {
-            background: rgba(45, 27, 69, 0.8);
-            backdrop-filter: blur(10px);
-            border: 2px solid var(--antique-gold);
-            border-radius: 20px;
-        }
-        
-        .particle-container {
+        .bg-video {
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .bg-video__media {
             width: 100%;
             height: 100%;
-            pointer-events: none;
+            object-fit: cover;
+        }
+        .bg-video__overlay {
+            position: fixed;
+            inset: 0;
             z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(120% 92% at 50% 42%, transparent 52%, rgba(7, 3, 15, 0.55) 100%),
+                linear-gradient(180deg, rgba(21, 13, 38, 0.58) 0%, rgba(21, 13, 38, 0.4) 40%, rgba(21, 13, 38, 0.62) 100%);
         }
-        
-        .glow-text {
-            text-shadow: 0 0 10px var(--antique-gold), 0 0 20px var(--antique-gold), 0 0 30px var(--antique-gold);
-        }
-        
-        .typewriter-container {
-            min-height: 60px;
-        }
-        
-        .interpretation-card {
-            background: rgba(245, 245, 220, 0.95);
-            color: var(--mystic-purple);
-            border: 2px solid var(--antique-gold);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .reading-position {
-            text-align: center;
-            margin-bottom: 10px;
-            font-family: 'Cinzel', serif;
-            color: var(--antique-gold);
-            font-weight: 600;
-        }
-        
-        .deck-area {
-            perspective: 1000px;
-        }
-        
-        .deck-card {
-            position: relative;
-            width: 120px;
-            height: 200px;
-            margin: 0 10px;
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
-        }
-        
-        .deck-card:hover {
-            transform: rotateY(10deg) translateZ(20px);
-        }
-        
-        @media (max-width: 768px) {
-            .mystical-title {
-                font-size: 2.5rem;
-            }
-            
-            .tarot-card {
-                width: 80px;
-                height: 120px;
-            }
-            
-            .deck-card {
-                width: 80px;
-                height: 120px;
-            }
+        @media (prefers-reduced-motion: reduce) {
+            .bg-video { display: none; }
+            .bg-video__overlay { display: none; }
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen">
+    <!-- Sfondo video full-screen -->
+    <div class="bg-video" aria-hidden="true">
+        <video id="bg-video" class="bg-video__media" src="resources/videos/webm/sfondo.webm" type="video/webm"
+            autoplay muted loop playsinline preload="auto"
+            poster="resources/backgrounds/mystical_bg.png"></video>
+    </div>
+    <div class="bg-video__overlay" aria-hidden="true"></div>
+
     <!-- Particle Background -->
     <div class="particle-container" id="particles"></div>
-    
+
     <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 bg-black bg-opacity-30 backdrop-blur-md border-b border-yellow-600">
-        <div class="container mx-auto px-6 py-4">
-            <div class="flex justify-between items-center">
-                <h1 class="mystical-title text-2xl">I Tarocchi Italiani</h1>
-                <div class="flex space-x-6">
-                    <a href="index.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Home</a>
-                    <a href="reading.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Lettura</a>
-                    <a href="library.html" class="text-yellow-400 hover:text-yellow-300 transition-colors">Libreria</a>
+    <nav class="site-nav fixed top-0 w-full z-50">
+        <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div class="flex justify-between items-center gap-4">
+                <h1 class="nav-brand text-xl sm:text-2xl hidden min-[380px]:block">L'Oracolo di Belline</h1>
+                <div class="flex justify-center space-x-3 sm:space-x-6 text-sm sm:text-base">
+                    <a href="index.html" class="nav-link whitespace-nowrap" aria-current="page">Belline</a>
+                    <a href="stesa.html" class="nav-link whitespace-nowrap">Stesa</a>
+                    <a href="narrativa.html" class="nav-link whitespace-nowrap">Passato · Presente · Futuro</a>
+                    <a href="natale.html" class="nav-link whitespace-nowrap">Carta Natale</a>
+                    <a href="pricing.html" class="nav-link whitespace-nowrap">Piani</a>
                 </div>
             </div>
         </div>
     </nav>
-    
-    <!-- Hero Section -->
-    <section class="min-h-screen flex items-center justify-center pt-20 px-6">
-        <div class="text-center max-w-4xl mx-auto">
-            <h1 class="mystical-title text-6xl md:text-8xl mb-6 glow-text" data-splitting>
-                I Tarocchi Italiani
-            </h1>
-            <div class="typewriter-container mb-8">
-                <p class="text-xl md:text-2xl text-yellow-200" id="typewriter"></p>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="container mx-auto max-w-7xl">
+
+            <!-- Header -->
+            <div class="text-center mb-12 fade-in">
+                <h1 class="mystical-title title-magic text-5xl md:text-6xl mb-6">L'Oracolo di Belline</h1>
+                <p class="text-xl text-yellow-200 max-w-3xl mx-auto">
+                    Il Bello è l'antico oracolo delle 52 "Luci" planetarie: carte prime, sette serie astrali
+                    e la misteriosa Carta Blu, per leggere il destino con la tradizione italiana.
+                </p>
             </div>
-            <button class="mystical-button px-8 py-4 rounded-full text-xl font-bold" onclick="startReading()">
-                Inizia la Lettura
-            </button>
-        </div>
-    </section>
-    
-    <!-- Reading Interface -->
-    <section class="py-20 px-6" id="reading-section" style="display: none;">
-        <div class="container mx-auto max-w-6xl">
-            <h2 class="mystical-title text-4xl text-center mb-12">Scegli il Tipo di Lettura</h2>
-            
-            <!-- Reading Type Selector -->
-            <div class="flex flex-wrap justify-center gap-4 mb-12">
-                <button class="mystical-button px-6 py-3 rounded-full" onclick="selectReadingType('three-card')">
-                    Lettura a Tre Carte
-                </button>
-                <button class="mystical-button px-6 py-3 rounded-full" onclick="selectReadingType('single')">
-                    Carta del Giorno
-                </button>
-                <button class="mystical-button px-6 py-3 rounded-full" onclick="selectReadingType('love')">
-                    Amore e Relazioni
-                </button>
-                <button class="mystical-button px-6 py-3 rounded-full" onclick="selectReadingType('career')">
-                    Carriera e Lavoro
-                </button>
+
+            <!-- Scelta della stesa -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 fade-in">
+                <a href="stesa.html" class="reading-area block p-6 sm:p-8 rounded-3xl hover:scale-[1.02] transition-transform no-underline">
+                    <h2 class="card-name text-2xl mb-3">✦ Stesa di Belline</h2>
+                    <p class="text-sm text-yellow-200 mb-1"><strong class="text-amber-300">Libera · Con domanda</strong></p>
+                    <p class="text-yellow-100/90 text-sm">
+                        Formula una domanda, scegli quante luci estrarre (1, 3 o 7) e includi la Carta Blu.
+                        Le Luci ti rispondono con abbinamenti e consiglio pratico.
+                    </p>
+                    <span class="mt-6 inline-block mystical-button px-6 py-2 rounded-full">Consulta le Luci</span>
+                </a>
+
+                <a href="narrativa.html" class="reading-area block p-6 sm:p-8 rounded-3xl hover:scale-[1.02] transition-transform no-underline">
+                    <h2 class="card-name text-2xl mb-3">✦ Passato · Presente · Futuro</h2>
+                    <p class="text-sm text-yellow-200 mb-1"><strong class="text-amber-300">Stesa narrativa</strong></p>
+                    <p class="text-yellow-100/90 text-sm">
+                        Tre luci fisse raccontano il tuo cammino in luce della Carta Natale: da dove vieni,
+                        dove sei, dove vai. Con sesso e data di nascita per una lettura su misura.
+                    </p>
+                    <span class="mt-6 inline-block mystical-button px-6 py-2 rounded-full">Svela il tuo cammino</span>
+                </a>
+
+                <a href="natale.html" class="reading-area block p-6 sm:p-8 rounded-3xl hover:scale-[1.02] transition-transform no-underline">
+                    <h2 class="card-name text-2xl mb-3">✦ La Tua Carta Natale</h2>
+                    <p class="text-sm text-yellow-200 mb-1"><strong class="text-amber-300">La Luce di nascita</strong></p>
+                    <p class="text-yellow-100/90 text-sm">
+                        Calcola la carta personale della tradizione italiana: somma giorno e mese reali
+                        al tuo anno ridotto a cifra singola e scopri la tua serie astrale.
+                    </p>
+                    <span class="mt-6 inline-block mystical-button px-6 py-2 rounded-full">Calcola la tua Carta</span>
+                </a>
             </div>
-            
-            <!-- Card Drawing Area -->
-            <div class="reading-area p-8 rounded-3xl">
-                <div class="text-center mb-8">
-                    <h3 class="card-name text-2xl mb-4" id="reading-title">Mescola le Carte</h3>
-                    <p class="text-yellow-200 mb-6" id="reading-description">Clicca sul mazzo per mescolare le carte</p>
-                </div>
-                
-                <!-- Deck Area -->
-                <div class="deck-area flex justify-center items-center mb-8" id="deck-area">
-                    <div class="deck-card tarot-card card-back" onclick="shuffleDeck()" id="deck">
-                        <div class="w-full h-full flex items-center justify-center">
-                            <div class="text-yellow-400 text-4xl">✦</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Card Positions -->
-                <div class="flex flex-wrap justify-center gap-6 mb-8" id="card-positions" style="display: none;">
-                    <div class="text-center">
-                        <div class="reading-position">Passato</div>
-                        <div class="tarot-card w-32 h-48 mx-auto border-dashed" id="position-1" onclick="drawCard(1)">
-                            <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                <div class="text-2xl">?</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <div class="reading-position">Presente</div>
-                        <div class="tarot-card w-32 h-48 mx-auto border-dashed" id="position-2" onclick="drawCard(2)">
-                            <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                <div class="text-2xl">?</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <div class="reading-position">Futuro</div>
-                        <div class="tarot-card w-32 h-48 mx-auto border-dashed" id="position-3" onclick="drawCard(3)">
-                            <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                <div class="text-2xl">?</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Single Card Position -->
-                <div class="flex justify-center mb-8" id="single-position" style="display: none;">
-                    <div class="text-center">
-                        <div class="reading-position" id="single-position-title">La Tua Carta</div>
-                        <div class="tarot-card w-32 h-48 mx-auto border-dashed" id="single-card" onclick="drawSingleCard()">
-                            <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                <div class="text-2xl">?</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Interpretation Area -->
-            <div class="mt-12" id="interpretation-area" style="display: none;">
-                <h3 class="mystical-title text-3xl text-center mb-8">Interpretazione della Lettura</h3>
-                <div id="interpretations"></div>
-                <div class="text-center mt-8">
-                    <button class="mystical-button px-8 py-4 rounded-full" onclick="saveReading()">
-                        Salva Lettura
-                    </button>
-                    <button class="mystical-button px-8 py-4 rounded-full ml-4" onclick="newReading()">
-                        Nuova Lettura
-                    </button>
-                </div>
+
+            <!-- Pricing -->
+            <section class="reading-area p-6 sm:p-8 rounded-3xl mb-12 fade-in" aria-labelledby="pricing-title">
+                <h2 class="mystical-title text-3xl md:text-4xl text-center mb-3">✦ Scegli il tuo cammino</h2>
+                <p class="text-center text-yellow-200/90 max-w-2xl mx-auto text-sm sm:text-base mb-8">
+                    Inizia gratis ogni giorno. Oppure apri il Club o la via del Lettore Esperto:
+                    in questa versione demo il piano scelto si attiva subito, senza pagamenti.
+                </p>
+                <div id="belline-pricing-root"></div>
+            </section>
+
+            <!-- Series Reference -->
+            <div class="reading-area p-6 sm:p-8 rounded-3xl fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-8">Le Sette Luci Astrali</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="belline-series-ref"></div>
             </div>
         </div>
-    </section>
-    
+    </main>
+
     <!-- Footer -->
-    <footer class="py-12 px-6 border-t border-yellow-600 bg-black bg-opacity-30">
-        <div class="container mx-auto text-center">
-            <p class="text-yellow-200">© 2024 I Tarocchi Italiani - Arte Divinatoria in Stile Art Nouveau</p>
-        </div>
+    <footer class="site-footer py-12 px-6 text-center">
+        <p class="footer-text">© 2026 L'Oracolo di Belline - Arte Divinatoria in Stile Art Nouveau</p>
     </footer>
-    
-    <script src="main.js"></script>
+
+    <button id="bg-audio-toggle" class="mystical-button fixed bottom-6 right-6 z-50 px-5 py-2.5 rounded-full shadow-lg"
+            type="button" aria-pressed="false">🔊 Attiva audio</button>
+
+    <script src="config.local.js?v=4"></script>
+    <script src="config.deploy.js?v=1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="belline-backend.js?v=4"></script>
+    <script src="belline.js?v=6"></script>
+    <script src="belline-common.js?v=25"></script>
+    <script src="belline-series.js?v=6"></script>
+    <script src="belline-wallet.js?v=3"></script>
+    <script src="belline-pricing.js?v=2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            renderBellineSeries();
+            initializeBellineParticles();
+            initializeMagicCursorHalo();
+            if (window.bellinePricing) {
+                window.bellinePricing.render(document.getElementById('belline-pricing-root'));
+            }
+
+            // Scintille magiche periodiche attorno al titolo
+            const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!reduceMotion && typeof window.bellineSpawnSpark === 'function') {
+                const title = document.querySelector('h1.title-magic');
+                if (title) {
+                    setInterval(function() {
+                        const r = title.getBoundingClientRect();
+                        for (let i = 0; i < 3; i++) {
+                            window.bellineSpawnSpark(
+                                r.left + Math.random() * r.width,
+                                r.top + r.height / 2 + (Math.random() * 2 - 1) * r.height * 0.9
+                            );
+                        }
+                    }, 1200);
+                }
+            }
+
+            const vid = document.getElementById('bg-video');
+            const btn = document.getElementById('bg-audio-toggle');
+            if (vid && btn) {
+                btn.addEventListener('click', function() {
+                    const on = !btn.classList.contains('is-on');
+                    vid.muted = !on;
+                    if (on) vid.play().catch(function(){});
+                    btn.classList.toggle('is-on', on);
+                    btn.setAttribute('aria-pressed', on);
+                    btn.textContent = on ? '🔇 Disattiva audio' : '🔊 Attiva audio';
+                });
+            }
+        });
+    </script>
 </body>
 </html>
