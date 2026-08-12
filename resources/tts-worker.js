@@ -34,6 +34,12 @@ var OPFS_MODEL_NAME = 'it_IT-riccardo-x_low.onnx';
 var OPFS_MODEL_JSON_NAME = 'it_IT-riccardo-x_low.onnx.json';
 var OPFS_DIR = 'piper';
 
+// Dimensione attesa dei file locali: se un file OPFS ha una dimensione diversa
+// è corrotto (es. scrittura interrotta da un vecchio timeout) e va riscaricato.
+var EXPECTED_SIZES = {};
+EXPECTED_SIZES[OPFS_MODEL_NAME] = 28130791;
+EXPECTED_SIZES[OPFS_MODEL_JSON_NAME] = 4161;
+
 function report(percent) {
     self.postMessage({ type: 'progress', loaded: percent, total: 100, percent: percent });
 }
@@ -58,11 +64,39 @@ async function readOpfs(name) {
     }
 }
 
-// Scarica modello+config dal nostro dominio in OPFS se assenti.
+async function removeOpfs(name) {
+    try {
+        const root = await navigator.storage.getDirectory();
+        const dir = await root.getDirectoryHandle(OPFS_DIR);
+        const file = await dir.getFileHandle(name);
+        await file.remove();
+    } catch (e) { /* file assente: ok */ }
+}
+
+// Cancella tutte le voci modello/config da OPFS (per auto-riparazione).
+async function clearModelOpfs() {
+    await removeOpfs(OPFS_MODEL_NAME);
+    await removeOpfs(OPFS_MODEL_JSON_NAME);
+}
+
+// Un file OPFS è valido solo se esiste E ha la dimensione attesa.
+async function readValidOpfs(name) {
+    const f = await readOpfs(name);
+    if (!f) return null;
+    const expected = EXPECTED_SIZES[name];
+    if (expected && f.size !== expected) {
+        console.warn('[tts-worker] file OPFS corrotto, rimuovo:', name, f.size, 'atteso', expected);
+        await removeOpfs(name);
+        return null;
+    }
+    return f;
+}
+
+// Scarica modello+config dal nostro dominio in OPFS se assenti o corrotti.
 // Ritorna true se il modello è disponibile localmente.
 async function ensureModelLocal() {
-    const model = await readOpfs(OPFS_MODEL_NAME);
-    const cfg = await readOpfs(OPFS_MODEL_JSON_NAME);
+    const model = await readValidOpfs(OPFS_MODEL_NAME);
+    const cfg = await readValidOpfs(OPFS_MODEL_JSON_NAME);
     if (model && cfg) return true;
 
     report(0);
@@ -144,19 +178,20 @@ self.onmessage = async function (e) {
         self.postMessage({ type: 'heartbeat' });
     }, 5000);
 
-    try {
+    // Prova a generare l'audio. `attempt` permette di ritentare una volta dopo
+    // l'auto-riparazione dell'OPFS (modello corrotto → crash numerico WASM).
+    async function runPredict(attempt) {
         // Garantisce modello+config locali in OPFS PRIMA di chiamare predict.
         await ensureModelLocal();
 
         const tts = await import('https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm');
         if (!tts || typeof tts.predict !== 'function') {
-            self.postMessage({ type: 'error', name: 'Error', message: 'modulo vits-web non disponibile' });
-            return;
+            throw new Error('modulo vits-web non disponibile');
         }
 
         // PATH_MAP non serve più: modello+config sono già in OPFS con i nomi
         // che predict() cerca (chiave = ultimo segmento dell'URL HF).
-        const blob = await tts.predict(
+        return await tts.predict(
             { text: text, voiceId: voiceId },
             function (p) {
                 if (p && typeof p.loaded === 'number' && typeof p.total === 'number' && p.total > 0) {
@@ -169,12 +204,37 @@ self.onmessage = async function (e) {
                 }
             }
         );
+    }
+
+    // Un errore emscripten/WASM arriva spesso come valore numerico (un
+    // indirizzo/puntatore): è il segnale che il modello in OPFS è corrotto.
+    function isNumericError(err) {
+        return (typeof err === 'number') ||
+            (typeof err === 'string' && /^\d+$/.test(err.trim())) ||
+            (err && typeof err.message === 'string' && /^\d+$/.test(err.message.trim())) ||
+            (err && typeof err.message === 'number');
+    }
+
+    try {
+        let blob;
+        try {
+            blob = await runPredict(1);
+        } catch (err) {
+            // Primo errore: se sembra un crash numerico (modello corrotto),
+            // cancella OPFS e ritenta una volta con un download pulito.
+            if (isNumericError(err)) {
+                console.warn('[tts-worker] crash numerico, auto-riparazione OPFS:', err);
+                await clearModelOpfs();
+                blob = await runPredict(2);
+            } else {
+                throw err;
+            }
+        }
 
         clearInterval(heartbeat);
 
         if (!(blob instanceof Blob) || blob.size === 0) {
-            self.postMessage({ type: 'error', name: 'Error', message: 'audio vuoto' });
-            return;
+            throw new Error('audio vuoto');
         }
 
         // Trasferisci l'audio come ArrayBuffer: il main thread ricostruisce il
