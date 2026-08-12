@@ -80,6 +80,20 @@ L'iscrizione obbligatoria è un drop-off nel B2C italiano: il pattern vincente �
 - **Backend:** Supabase (Auth anon → email → Google, Postgres per wallet/storico, Edge Functions come proxy API). Alternativa: Cloudflare Workers + D1.
 - **Proxy API:** le chiavi Groq/ElevenLabs passano solo server-side → rate limiting + limiti per utente.
 - **Pagamenti:** **Lemon Squeezy** (merchant of record: gestisce IVA OSS e fatture EU) con fallback Stripe. Se app mobile: IAP Apple/Google (obbligatorio per gli store).
+- **Costi Lemon Squeezy:** nessun canone mensile né tier a pagamento → si parte gratis, si paga solo per transazione. Costi variabili: 5%+0,50€/transazione (tutto incluso: tax/VAT, fraude, dispute), +1,5% transazioni internazionali, +1,5% pagamenti PayPal, +0,5% rinnovi abbonamento, ~1% payout bonifico internazionale. Il piano Pro (fee su licenze software) NON serve: vendiamo crediti/abbonamenti, non licenze. API gratuita (limite 300 req/min).
+
+### Note operative — payout Lemon Squeezy con solo conto BancoPosta
+
+Il fondatore ha **solo un conto postale (BancoPosta)**: funziona per ricevere i payout, nessun conto bancario "tradizionale" richiesto.
+
+- **Come ricevi i soldi:** bonifico bancario su **IBAN** (SEPA). Nell'onboarding di Lemon Squeezy inserisci IBAN + intestatario del conto postale (KYC: deve essere intestato a te; con partita IVA servira poi un conto dedicato).
+- **Frequenza:** payout due volte al mese (**1° e 15°**), includono tutte le vendite dall'ultimo ciclo. Nessun minimo di payout per i bonifici.
+- **Valuta:** i bonifici escono in **USD** anche verso l'Europa → Poste converte in EUR con la propria commissione di cambio, oppure si ricevono in USD e si converte a parte.
+- **Costi sul netto:**
+  - 1% fee di payout per bonifici internazionali (infrastruttura Stripe).
+  - + commissione di conversione USD→EUR di Poste.
+- **Controprova su una vendita Club 6,90€/mese:** 5%+0,50€ base + 0,5% abbonamento + ~1% payout + conversione → incasso netto **~5,5-5,8€**.
+- **Alternativa scartata:** PayPal riceve i payout sempre in USD e bonifica poi al conto postale — costa di più (3%, cap 30$) → per noi il **bonifico diretto è la via migliore**.
 
 ---
 

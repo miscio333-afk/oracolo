@@ -1,7 +1,9 @@
-// Oracolo di Belline — Sezione Pricing "✦ Scegli il tuo cammino" (Fase A, demo).
+// Oracolo di Belline — Sezione Pricing "✦ Scegli il tuo cammino" (Fase B, monetizzazione).
 // I piani sono quelli del piano commerciale (docs/PLAN-STESE-COMMERCIALI.md);
-// i Pack crediti sono esclusi. La scelta attiva il piano locale simulato
-// (belline.plan.v1) tramite bellineWallet.setPlan(): nulla viene addebitato.
+// i Pack crediti sono esclusi. Club/Esperto aprono il checkout di Lemon Squeezy
+// (config BELLINE_LEMONSQUEEZY) con custom data uid/email; l'attivazione reale
+// avviene lato server via webhook (belline-ls-webhook). Se il backend o i link
+// non sono configurati, resta il vecchio piano demo locale (sviluppo/offline).
 // Caricare DOPO belline-wallet.js (non è obbligatorio che backend sia pronto).
 
 (function () {
@@ -104,9 +106,72 @@
     }
 
     function demoNoteHTML() {
-        return '<p class="pricing-demo-note">✦ Versione demo senza pagamenti: scegliere Club o Esperto sblocca ' +
-            'subito più crediti al giorno, lo storico illimitato e l\'audio AI. ' +
-            'Torna a Free quando vuoi; i pagamenti reali arriveranno a breve.</p>';
+        return '<p class="pricing-demo-note">✦ Scegliendo Club o Lettore Esperto si apre il checkout ' +
+            'sicuro di Lemon Squeezy (carta, PayPal o Apple Pay): il piano si attiva in pochi secondi ' +
+            'e puoi disdirlo quando vuoi. Free è e resta gratuito, senza carta.</p>';
+    }
+
+    var CHECKOUT_FLAG = 'belline.checkout.plan';
+
+    // Apre il checkout LMS per il piano: aggiunge ?checkout[email] e
+    // ?checkout[custom][uid] per il grant lato server. Ritorna false se il
+    // checkout non è configurato o il backend non è disponibile (→ demo locale).
+    function startCheckout(planKey) {
+        var cfg = window.BELLINE_LEMONSQUEEZY;
+        var base = cfg && cfg.checkout ? cfg.checkout[planKey] : null;
+        if (!base) return false;
+
+        var server = window.bellineServer;
+        if (!server || !server.isAvailable || !server.isAvailable()) return false;
+
+        var params = [];
+        if (server.getUserEmail) {
+            var email = server.getUserEmail();
+            if (email) params.push('checkout[email]=' + encodeURIComponent(email));
+        }
+        if (server.getSessionUserId) {
+            var uid = server.getSessionUserId();
+            if (uid) params.push('checkout[custom][uid]=' + encodeURIComponent(uid));
+        }
+
+        var url = base;
+        if (params.length) {
+            url += (base.indexOf('?') >= 0 ? '&' : '?') + params.join('&');
+        }
+
+        try { sessionStorage.setItem(CHECKOUT_FLAG, planKey); } catch (e) { /* ignore */ }
+
+        window.location.href = url;
+        return true;
+    }
+
+    // Tornati dal checkout: poll per ~60s finché il piano server non si attiva.
+    function pollCheckoutReturn() {
+        var flag = null;
+        try { flag = sessionStorage.getItem(CHECKOUT_FLAG); } catch (e) { /* ignore */ }
+        if (!flag) return;
+        try { sessionStorage.removeItem(CHECKOUT_FLAG); } catch (e) { /* ignore */ }
+
+        var server = window.bellineServer;
+        if (!server || !server.ready) return;
+
+        var attempts = 0;
+        var timer = setInterval(function () {
+            attempts++;
+            server.ready().then(function (ok) {
+                if (!ok) {
+                    if (attempts >= 12) clearInterval(timer);
+                    return;
+                }
+                if (window.bellineWallet && window.bellineWallet.refresh) {
+                    window.bellineWallet.refresh();
+                }
+                var paid = window.bellineWallet && window.bellineWallet.isPaid
+                    ? window.bellineWallet.isPaid()
+                    : false;
+                if (paid || attempts >= 12) clearInterval(timer);
+            });
+        }, 5000);
     }
 
     var renderedEl = null;
@@ -127,10 +192,18 @@
         var buttons = el.querySelectorAll('.pricing-cta');
         for (var b = 0; b < buttons.length; b++) {
             buttons[b].addEventListener('click', function () {
-                if (!window.bellineWallet || typeof window.bellineWallet.setPlan !== 'function') return;
                 var key = this.getAttribute('data-plan');
                 if (!key) return;
-                window.bellineWallet.setPlan(key);
+
+                if (key !== 'free') {
+                    // Piani paganti → checkout Lemon Squeezy. Demo solo se mancano
+                    // link/backend (es. sviluppo locale o sito senza Supabase).
+                    if (startCheckout(key)) return;
+                }
+
+                if (window.bellineWallet && typeof window.bellineWallet.setPlan === 'function') {
+                    window.bellineWallet.setPlan(key);
+                }
             });
         }
     }
@@ -144,6 +217,7 @@
         } catch (e) { /* ambiente senza addEventListener */ }
     }
     listenToPlanChanges();
+    pollCheckoutReturn();
 
     // Export per console / integrazione pagine
     window.bellinePricing = {

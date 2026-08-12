@@ -33,6 +33,19 @@ window.BELLINE_SUPABASE = {
 //     elevenlabs: { functionName: 'belline-tts', voiceId: 'JBFqnCBsd6RMkjVDRZzb' }
 // };
 
+// Lemon Squeezy — payment link pubblici degli abbonamenti (nessun segreto qui).
+// URL da LMS: Products → Share → Copia link del checkout.
+// Il piano viene attivato lato server dal webhook (Edge Function belline-ls-webhook),
+// a cui agganciamo user_id via ?checkout[custom][uid]=... e prefill email.
+// Varianti LMS del negozio reale (per il FALLBACK_VARIANT_MAP del webhook):
+// 2009314 = Club 6,90 €/mese, 2009347 = Lettore Esperto 14,90 €/mese.
+window.BELLINE_LEMONSQUEEZY = {
+    checkout: {
+        club: 'https://STORE.lemonsqueezy.com/checkout/buy/CLUB_CHECKOUT_ID',
+        expert: 'https://STORE.lemonsqueezy.com/checkout/buy/EXPERT_CHECKOUT_ID'
+    }
+};
+
 // TTS ElevenLabs = feature dei piani a pagamento (Club/Esperto): l'audio AI
 // viene generato solo se il piano (verificato lato server) è pagante.
 // I free usano le voci di sistema del browser (gratuite).
