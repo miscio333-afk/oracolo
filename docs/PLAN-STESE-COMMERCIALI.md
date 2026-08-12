@@ -95,6 +95,19 @@ Il fondatore ha **solo un conto postale (BancoPosta)**: funziona per ricevere i 
 - **Controprova su una vendita Club 6,90€/mese:** 5%+0,50€ base + 0,5% abbonamento + ~1% payout + conversione → incasso netto **~5,5-5,8€**.
 - **Alternativa scartata:** PayPal riceve i payout sempre in USD e bonifica poi al conto postale — costa di più (3%, cap 30$) → per noi il **bonifico diretto è la via migliore**.
 
+### To-do — verifica identità (KYC) Lemon Squeezy
+
+- [x] Account Lemon Squeezy creato e store configurato
+- [x] Prodotti Club 6,90€ e Lettore Esperto 14,90€ creati (varianti 2009314 / 2009347)
+- [x] Checkout link pubblici nel sito (config BELLINE_LEMONSQUEEZY)
+- [x] Webhook belline-ls-webhook su Supabase (v3, HMAC verificato)
+- [x] Sottomessa verifica identità (KYC) — **stato: in review**
+- [ ] Verifica approvata
+- [ ] IBAN BancoPosta inserito nella sezione payout
+- [ ] Primo payout ricevuto (ciclo 1° o 15°)
+
+**Note:** finché la review è in corso i checkout funzionano, ma i payout restano in attesa. L'IBAN deve essere intestato al fondatore (KYC); con partita IVA servirà poi un conto dedicato. I bonifici escono in USD → Poste converte in EUR con la propria commissione.
+
 ---
 
 ## 6. Costi mensili stimati e margine
