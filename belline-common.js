@@ -25,120 +25,163 @@ let bellineNatalSelected = null;
 // Sesso del consultante sulla stesa narrativa: 'male' | 'female' | null
 let bellineSex = null;
 
-// Particle system self-contained (p5.js caricato nella pagina)
+// Particle system self-contained (Canvas 2D nativo, senza p5.js).
+// Polvere d'oro + scia di scintille che segue il cursore/touch.
 function initializeBellineParticles() {
     const particleContainer = document.getElementById('particles');
-    if (!particleContainer || typeof p5 === 'undefined') return;
+    if (!particleContainer || typeof document.createElement('canvas') === 'undefined') return;
 
     // Rispetta la riduzione del movimento: nessuna animazione
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    new p5(function (p) {
-        const particles = [];
-        const sparks = [];
-        let lastSparkX = -9999;
-        let lastSparkY = -9999;
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'absolute';
+    canvas.style.inset = '0';
+    canvas.style.pointerEvents = 'none';
+    particleContainer.appendChild(canvas);
+    canvas.width = particleContainer.clientWidth || window.innerWidth;
+    canvas.height = particleContainer.clientHeight || window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { canvas.remove(); return; }
 
-        // Scia di scintille che segue il cursore (o il dito su touch)
-        function spawnSpark(x, y) {
-            if (sparks.length > 140) sparks.shift();
-            for (let i = 0; i < 3; i++) {
-                sparks.push({
-                    x: x + p.random(-7, 7),
-                    y: y + p.random(-7, 7),
-                    vx: p.random(-0.6, 0.6),
-                    vy: p.random(-1.6, -0.5),
-                    life: 1,
-                    decay: p.random(0.018, 0.03),
-                    size: p.random(2, 5),
-                    gold: p.random() < 0.35
-                });
-            }
-        }
+    const particles = [];
+    const sparks = [];
+    let lastSparkX = -9999;
+    let lastSparkY = -9999;
 
-        window.addEventListener('mousemove', function (e) {
-            const dx = e.clientX - lastSparkX;
-            const dy = e.clientY - lastSparkY;
-            if (dx * dx + dy * dy < 100) return;
-            lastSparkX = e.clientX;
-            lastSparkY = e.clientY;
-            spawnSpark(e.clientX, e.clientY);
-        });
-        window.addEventListener('touchmove', function (e) {
-            const t = e.touches && e.touches[0];
-            if (!t) return;
-            const dx = t.clientX - lastSparkX;
-            const dy = t.clientY - lastSparkY;
-            if (dx * dx + dy * dy < 120) return;
-            lastSparkX = t.clientX;
-            lastSparkY = t.clientY;
-            spawnSpark(t.clientX, t.clientY);
-        }, { passive: true });
-
-        p.setup = function () {
-            const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-            canvas.parent('particles');
-            // Hook condiviso: permette a qualsiasi pagina di sparare scintille (es. titolo)
-            window.bellineSpawnSpark = spawnSpark;
-            // Polvere d'oro: numerosa, fine e scintillante
-            for (let i = 0; i < 90; i++) {
-                particles.push({
-                    x: p.random(p.width),
-                    y: p.random(p.height),
-                    vx: p.random(-0.25, 0.25),
-                    vy: p.random(-0.25, 0.25),
-                    baseAlpha: p.random(60, 160),
-                    alpha: p.random(60, 160),
-                    size: p.random(1, 3),
-                    phase: p.random(p.TWO_PI)
-                });
-            }
-        };
-
-        p.draw = function () {
-            p.clear();
-            p.noStroke();
-            particles.forEach(function (pt) {
-                pt.x += pt.vx;
-                pt.y += pt.vy;
-                if (pt.x < 0) pt.x = p.width;
-                if (pt.x > p.width) pt.x = 0;
-                if (pt.y < 0) pt.y = p.height;
-                if (pt.y > p.height) pt.y = 0;
-                // Scintillio: pulsazione lenta dell'opacità
-                pt.phase += 0.04;
-                pt.alpha = pt.baseAlpha * (0.55 + 0.45 * p.sin(pt.phase));
-                // Oro raffinato
-                p.fill(212, 175, 55, pt.alpha);
-                p.ellipse(pt.x, pt.y, pt.size);
+    // Scia di scintille che segue il cursore (o il dito su touch)
+    function spawnSpark(x, y) {
+        if (sparks.length > 140) sparks.shift();
+        for (let i = 0; i < 3; i++) {
+            sparks.push({
+                x: x + bellineRand(-7, 7),
+                y: y + bellineRand(-7, 7),
+                vx: bellineRand(-0.6, 0.6),
+                vy: bellineRand(-1.6, -0.5),
+                life: 1,
+                decay: bellineRand(0.018, 0.03),
+                size: bellineRand(2, 5),
+                gold: Math.random() < 0.35
             });
+        }
+    }
 
-            // Scintille: con alone luminoso per farle brillare sul video
-            for (let i = sparks.length - 1; i >= 0; i--) {
-                const s = sparks[i];
-                s.vy += 0.03;
-                s.x += s.vx;
-                s.y += s.vy;
-                s.life -= s.decay;
-                if (s.life <= 0) { sparks.splice(i, 1); continue; }
-                const alpha = 230 * s.life;
-                if (s.gold) {
-                    p.fill(212, 175, 55, alpha * 0.3);
-                    p.ellipse(s.x, s.y, (s.size * 3.2) * s.life + 3);
-                    p.fill(212, 175, 55, alpha);
-                } else {
-                    p.fill(255, 225, 150, alpha * 0.3);
-                    p.ellipse(s.x, s.y, (s.size * 3.2) * s.life + 3);
-                    p.fill(255, 225, 150, alpha);
-                }
-                p.ellipse(s.x, s.y, s.size * s.life + 0.6);
-            }
-        };
-
-        p.windowResized = function () {
-            p.resizeCanvas(p.windowWidth, p.windowHeight);
-        };
+    window.addEventListener('mousemove', function (e) {
+        const dx = e.clientX - lastSparkX;
+        const dy = e.clientY - lastSparkY;
+        if (dx * dx + dy * dy < 100) return;
+        lastSparkX = e.clientX;
+        lastSparkY = e.clientY;
+        spawnSpark(e.clientX, e.clientY);
     });
+    window.addEventListener('touchmove', function (e) {
+        const t = e.touches && e.touches[0];
+        if (!t) return;
+        const dx = t.clientX - lastSparkX;
+        const dy = t.clientY - lastSparkY;
+        if (dx * dx + dy * dy < 120) return;
+        lastSparkX = t.clientX;
+        lastSparkY = t.clientY;
+        spawnSpark(t.clientX, t.clientY);
+    }, { passive: true });
+
+    // Hook condiviso: permette a qualsiasi pagina di sparare scintille (es. titolo)
+    window.bellineSpawnSpark = spawnSpark;
+
+    // Polvere d'oro: numerosa, fine e scintillante
+    for (let i = 0; i < 90; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: bellineRand(-0.25, 0.25),
+            vy: bellineRand(-0.25, 0.25),
+            baseAlpha: bellineRand(60, 160),
+            alpha: bellineRand(60, 160),
+            size: bellineRand(1, 3),
+            phase: Math.random() * Math.PI * 2
+        });
+    }
+
+    let rafId = null;
+    let running = true;
+
+    function resize() {
+        canvas.width = particleContainer.clientWidth || window.innerWidth;
+        canvas.height = particleContainer.clientHeight || window.innerHeight;
+    }
+    window.addEventListener('resize', function () {
+        resize();
+    });
+
+    function frame() {
+        if (!running) return;
+        rafId = requestAnimationFrame(frame);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 1;
+
+        particles.forEach(function (pt) {
+            pt.x += pt.vx;
+            pt.y += pt.vy;
+            if (pt.x < 0) pt.x = canvas.width;
+            if (pt.x > canvas.width) pt.x = 0;
+            if (pt.y < 0) pt.y = canvas.height;
+            if (pt.y > canvas.height) pt.y = 0;
+            // Scintillio: pulsazione lenta dell'opacità
+            pt.phase += 0.04;
+            pt.alpha = pt.baseAlpha * (0.55 + 0.45 * Math.sin(pt.phase));
+            // Oro raffinato
+            ctx.fillStyle = 'rgba(212, 175, 55, ' + (pt.alpha / 255) + ')';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Scintille: con alone luminoso per farle brillare sul video
+        for (let i = sparks.length - 1; i >= 0; i--) {
+            const s = sparks[i];
+            s.vy += 0.03;
+            s.x += s.vx;
+            s.y += s.vy;
+            s.life -= s.decay;
+            if (s.life <= 0) { sparks.splice(i, 1); continue; }
+            const alpha = 230 * s.life;
+            const core = s.gold ? '212, 175, 55' : '255, 225, 150';
+            ctx.fillStyle = 'rgba(' + core + ', ' + (alpha * 0.3 / 255) + ')';
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, (s.size * 3.2) * s.life + 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(' + core + ', ' + (alpha / 255) + ')';
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.size * s.life + 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function start() {
+        if (!running) { running = true; rafId = requestAnimationFrame(frame); }
+    }
+    function stop() {
+        running = false;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+
+    // Osservatore: avvia/pausa l'animazione quando il container è visibile
+    if (typeof IntersectionObserver !== 'undefined') {
+        const io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) start(); else stop();
+            });
+        });
+        io.observe(particleContainer);
+    }
+    start();
+
+    // Pulizia al unload della pagina (evita loop orfani)
+    window.addEventListener('pagehide', stop);
+}
+
+function bellineRand(min, max) {
+    return min + Math.random() * (max - min);
 }
 
 // Alone luminoso morbido che segue il cursore (solo dispositivi con puntatore preciso)
