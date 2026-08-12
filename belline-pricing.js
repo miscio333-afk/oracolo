@@ -1,9 +1,9 @@
 // Oracolo di Belline — Sezione Pricing "✦ Scegli il tuo cammino" (Fase B, monetizzazione).
 // I piani sono quelli del piano commerciale (docs/PLAN-STESE-COMMERCIALI.md);
-// i Pack crediti sono esclusi. Club/Esperto aprono il checkout di Lemon Squeezy
-// (config BELLINE_LEMONSQUEEZY) con custom data uid/email; l'attivazione reale
-// avviene lato server via webhook (belline-ls-webhook). Se il backend o i link
-// non sono configurati, resta il vecchio piano demo locale (sviluppo/offline).
+// i Pack crediti sono esclusi. Club/Esperto aprono SEMPRE il checkout di Lemon
+// Squeezy (config BELLINE_LEMONSQUEEZY), con prefill uid/email se il backend è
+// pronto; l'attivazione reale avviene lato server via webhook (belline-ls-webhook).
+// Il piano demo locale resta solo come fallback se i link LMS mancano (offline/dev).
 // Caricare DOPO belline-wallet.js (non è obbligatorio che backend sia pronto).
 
 (function () {
@@ -114,22 +114,20 @@
     var CHECKOUT_FLAG = 'belline.checkout.plan';
 
     // Apre il checkout LMS per il piano: aggiunge ?checkout[email] e
-    // ?checkout[custom][uid] per il grant lato server. Ritorna false se il
-    // checkout non è configurato o il backend non è disponibile (→ demo locale).
+    // ?checkout[custom][uid] se il backend è pronto (prefill, non obbligatorio).
+    // Ritorna false solo se il link di checkout non è configurato (→ demo locale).
     function startCheckout(planKey) {
         var cfg = window.BELLINE_LEMONSQUEEZY;
         var base = cfg && cfg.checkout ? cfg.checkout[planKey] : null;
         if (!base) return false;
 
-        var server = window.bellineServer;
-        if (!server || !server.isAvailable || !server.isAvailable()) return false;
-
         var params = [];
-        if (server.getUserEmail) {
+        var server = window.bellineServer;
+        if (server && server.getUserEmail && server.isAvailable && server.isAvailable()) {
             var email = server.getUserEmail();
             if (email) params.push('checkout[email]=' + encodeURIComponent(email));
         }
-        if (server.getSessionUserId) {
+        if (server && server.getSessionUserId && server.isAvailable && server.isAvailable()) {
             var uid = server.getSessionUserId();
             if (uid) params.push('checkout[custom][uid]=' + encodeURIComponent(uid));
         }
@@ -196,8 +194,8 @@
                 if (!key) return;
 
                 if (key !== 'free') {
-                    // Piani paganti → checkout Lemon Squeezy. Demo solo se mancano
-                    // link/backend (es. sviluppo locale o sito senza Supabase).
+                    // Piani paganti → sempre checkout Lemon Squeezy. Demo solo se
+                    // mancano i link (es. sviluppo locale senza config LMS).
                     if (startCheckout(key)) return;
                 }
 

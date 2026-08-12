@@ -22,7 +22,7 @@
 
     <!-- Design system condiviso -->
     <link rel="stylesheet" href="styles.css?v=16">
-    <link rel="stylesheet" href="belline.css?v=27">
+    <link rel="stylesheet" href="belline.css?v=28">
 
     <!-- Sfondo video full-screen -->
     <style>
@@ -136,15 +136,31 @@
     <script src="belline-backend.js?v=4"></script>
     <script src="belline.js?v=6"></script>
     <script src="belline-common.js?v=25"></script>
-    <script src="belline-wallet.js?v=4"></script>
+    <script src="belline-wallet.js?v=5"></script>
     <script src="belline-account.js?v=3"></script>
-    <script src="belline-pricing.js?v=2"></script>
+    <script src="belline-pricing.js?v=3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             initializeBellineParticles();
             initializeMagicCursorHalo();
             if (window.bellinePricing) {
                 window.bellinePricing.render(document.getElementById('belline-pricing-root'));
+            }
+
+            // Arrivo dall'Upgrade a crediti esauriti (pricing.html?reason=credits)
+            const reason = new URLSearchParams(window.location.search).get('reason');
+            if (reason === 'credits') {
+                const banner = document.createElement('div');
+                banner.className = 'reading-area p-5 sm:p-6 rounded-3xl fade-in mb-8 text-center';
+                banner.innerHTML =
+                    '<p class="mystical-title text-xl sm:text-2xl mb-2">✦ I crediti di oggi sono finiti</p>' +
+                    '<p class="text-yellow-100/90 text-sm sm:text-base">Le Luci si ricaricano domani. ' +
+                    'Intanto puoi scegliere un piano e leggere senza limiti di tempo: ' +
+                    'il piano si attiva in pochi secondi e puoi disdirlo quando vuoi.</p>';
+                const section = document.querySelector('main .max-w-7xl > .text-center');
+                if (section && section.nextElementSibling) {
+                    section.parentNode.insertBefore(banner, section.nextElementSibling);
+                }
             }
 
             const vid = document.getElementById('bg-video');

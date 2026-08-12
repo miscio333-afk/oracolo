@@ -184,45 +184,9 @@
         else chip.classList.remove('is-empty');
     }
 
-    function modal() {
-        var ov = document.getElementById('belline-wallet-blocked');
-        if (ov) return ov;
-
-        ov = document.createElement('div');
-        ov.id = 'belline-wallet-blocked';
-        ov.className = 'belline-wallet-overlay';
-        ov.setAttribute('role', 'dialog');
-        ov.setAttribute('aria-modal', 'true');
-        ov.innerHTML =
-            '<div class="belline-wallet-modal">' +
-            '  <div class="belline-wallet-title">🪙 Crediti esauriti</div>' +
-            '  <p class="belline-wallet-text">Hai utilizzato i <strong>' + dailyAllowance() + ' crediti gratuiti di oggi</strong>. ' +
-            'Le Luci torneranno a parlarti domani: ogni giorno le luci si ricaricano da sole.</p>' +
-            '  <p class="belline-wallet-text is-muted">Presto sarà possibile acquistare veri crediti o ' +
-            'unirsi al Club per letture illimitate. Iscriviti alla lista d\'attesa!</p>' +
-            '  <button type="button" class="belline-wallet-btn">Torna domani</button>' +
-            '</div>';
-        document.body.appendChild(ov);
-
-        ov.addEventListener('click', function (e) {
-            if (e.target === ov || e.target.className === 'belline-wallet-btn') closeModal();
-        });
-        return ov;
-    }
-
-    function closeModal() {
-        var ov = document.getElementById('belline-wallet-blocked');
-        if (ov) ov.style.display = 'none';
-    }
-
     function showBlocked(need) {
-        var st = getState();
-        var status = document.getElementById('belline-status');
-        if (status) {
-            status.textContent = 'Crediti esauriti per oggi: ti servivano ' + need +
-                ' crediti ma ne hai ' + st.remaining + '. Riprova domani.';
-        }
-        modal().style.display = 'flex';
+        // Crediti finiti → l'utente sceglie come proseguire (upgrade o ricarica).
+        window.location.href = 'pricing.html?reason=credits';
     }
 
     function hookCountChanges() {
