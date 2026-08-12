@@ -44,7 +44,13 @@ self.onmessage = async function (e) {
             return;
         }
 
-        self.postMessage({ type: 'result', audio: blob });
+        // Trasferisci l'audio come ArrayBuffer: il main thread ricostruisce il
+        // Blob, evitando problemi di `instanceof Blob` cross-realm (worker→main).
+        const buffer = await blob.arrayBuffer();
+        self.postMessage(
+            { type: 'result', buffer: buffer, mime: blob.type || 'audio/wav' },
+            [buffer]
+        );
     } catch (err) {
         self.postMessage({ type: 'error', message: String((err && err.message) || err) });
     }

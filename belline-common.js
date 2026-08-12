@@ -1964,6 +1964,7 @@ async function speakBellineAdvice() {
 
     if (result.workerError) {
         console.warn('[Belline TTS]', result.message);
+        if (status) status.textContent = 'La voce non è disponibile in questo momento: uso la voce di sistema.';
         speakBellineAdviceSystem(text);
         return;
     }
@@ -1971,16 +1972,24 @@ async function speakBellineAdvice() {
     const d = result.d;
     if (d.type === 'error') {
         console.warn('[Belline TTS] Worker error', d.message);
+        if (status) status.textContent = 'La voce non è disponibile in questo momento: uso la voce di sistema.';
         speakBellineAdviceSystem(text);
         return;
     }
 
-    const blob = d.audio;
-    if (!(blob instanceof Blob) || blob.size === 0) {
-        console.warn('[Belline TTS] Risposta audio vuota');
+    // L'audio arriva dal worker come ArrayBuffer (trasferito, senza copie):
+    // ricostruiamo il Blob nel main thread per evitare problemi di
+    // `instanceof Blob` cross-realm tra worker e pagina.
+    const buf = d.buffer;
+    if (!(buf instanceof ArrayBuffer) || buf.byteLength === 0) {
+        console.warn('[Belline TTS] Audio non valido');
+        if (status) status.textContent = 'Audio non valido: uso la voce di sistema.';
         speakBellineAdviceSystem(text);
         return;
     }
+
+    const blob = new Blob([buf], { type: d.mime || 'audio/wav' });
+    console.log('[Belline TTS] audio pronto', blob.size, blob.type);
 
     if (bellineAudioUrl) URL.revokeObjectURL(bellineAudioUrl);
     bellineAudioUrl = URL.createObjectURL(blob);
@@ -1989,11 +1998,42 @@ async function speakBellineAdvice() {
     bellineAudio.onended = () => stopBellineSpeech();
     bellineAudio.onerror = () => stopBellineSpeech();
     btn.textContent = '⏹ Interrompi';
+    if (status) status.textContent = '🎧 Voce pronta…';
+
+    // Riproduce. Se l'autoplay policy blocca il primo play (lo user activation
+    // del click può essere scaduto dopo il download del modello), ripetiamo il
+    // play al prossimo click/tocco dell'utente.
+    let unlocked = false;
+    const replay = async function () {
+        if (unlocked) return;
+        unlocked = true;
+        document.removeEventListener('click', replay);
+        document.removeEventListener('pointerdown', replay);
+        document.removeEventListener('keydown', replay);
+        try {
+            await bellineAudio.play();
+        } catch (e2) {
+            console.warn('[Belline TTS] replay', e2);
+            if (status) status.textContent = 'Tocca per riprodurre la voce.';
+        }
+    };
+
     try {
         await bellineAudio.play();
     } catch (err) {
-        console.warn('[Belline TTS]', err);
-        speakBellineAdviceSystem(text);
+        // Errore di autoplay (NotAllowedError) → sblocca con una interazione.
+        const name = (err && err.name) || '';
+        if (name === 'NotAllowedError' || /autoplay|intervention/i.test(String(err && err.message))) {
+            console.warn('[Belline TTS] Autoplay bloccato, in attesa di interazione');
+            if (status) status.textContent = '🔊 Tocca per ascoltare il messaggio.';
+            document.addEventListener('click', replay, { once: true });
+            document.addEventListener('pointerdown', replay, { once: true });
+            document.addEventListener('keydown', replay, { once: true });
+        } else {
+            console.warn('[Belline TTS]', err);
+            if (status) status.textContent = 'Impossibile riprodurre l\'audio: uso la voce di sistema.';
+            speakBellineAdviceSystem(text);
+        }
     }
 }
 
