@@ -18,27 +18,134 @@
     } catch (e) { /* se l'override fallisce si usa il valore di default */ }
 })();
 
+// Modello ospitato sul NOSTRO dominio (Vercel, same-origin): il download è
+// veloce e non dipende da huggingface.co. Il worker lo copia in OPFS con i
+// nomi esatti che vits-web cerca (ultimo segmento dell'URL HF), così
+// predict() trova tutto in cache e non effettua alcuna fetch esterna.
+var MODEL_URL = function () {
+    return new URL('models/it_IT-riccardo-x_low.onnx', self.location.href).href;
+};
+var MODEL_JSON_URL = function () {
+    return new URL('models/it_IT-riccardo-x_low.onnx.json', self.location.href).href;
+};
+
+// Nome chiave OPFS = ultimo segmento dell'URL HF che vits-web userà.
+var OPFS_MODEL_NAME = 'it_IT-riccardo-x_low.onnx';
+var OPFS_MODEL_JSON_NAME = 'it_IT-riccardo-x_low.onnx.json';
+var OPFS_DIR = 'piper';
+
+function report(percent) {
+    self.postMessage({ type: 'progress', loaded: percent, total: 100, percent: percent });
+}
+
+async function writeOpfs(name, blob) {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle(OPFS_DIR, { create: true });
+    const file = await dir.getFileHandle(name, { create: true });
+    const writable = await file.createWritable();
+    await writable.write(blob);
+    await writable.close();
+}
+
+async function readOpfs(name) {
+    try {
+        const root = await navigator.storage.getDirectory();
+        const dir = await root.getDirectoryHandle(OPFS_DIR);
+        const file = await dir.getFileHandle(name);
+        return await file.getFile();
+    } catch (e) {
+        return null;
+    }
+}
+
+// Scarica modello+config dal nostro dominio in OPFS se assenti.
+// Ritorna true se il modello è disponibile localmente.
+async function ensureModelLocal() {
+    const model = await readOpfs(OPFS_MODEL_NAME);
+    const cfg = await readOpfs(OPFS_MODEL_JSON_NAME);
+    if (model && cfg) return true;
+
+    report(0);
+
+    if (!cfg) {
+        const resp = await fetch(MODEL_JSON_URL());
+        if (!resp.ok) throw new Error('config modello non disponibile (' + resp.status + ')');
+        const blob = await resp.blob();
+        await writeOpfs(OPFS_MODEL_JSON_NAME, blob);
+        report(15);
+    }
+
+    if (!model) {
+        const resp = await fetch(MODEL_URL());
+        if (!resp.ok) throw new Error('modello non disponibile (' + resp.status + ')');
+        const contentLength = Number(resp.headers.get('Content-Length') || 0);
+        const reader = resp.body && resp.body.getReader();
+        if (!reader) {
+            const blob = await resp.blob();
+            await writeOpfs(OPFS_MODEL_NAME, blob);
+            report(100);
+        } else {
+            const chunks = [];
+            let received = 0;
+            for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                received += value.length;
+                if (contentLength > 0) {
+                    report(Math.min(90, Math.round(15 + (received / contentLength) * 75)));
+                }
+            }
+            const blob = new Blob(chunks, { type: 'application/octet-stream' });
+            await writeOpfs(OPFS_MODEL_NAME, blob);
+            report(100);
+        }
+    }
+
+    return true;
+}
+
 self.onmessage = async function (e) {
     const data = e.data || {};
+
+    // Warm-up: pre-scarica il modello in OPFS senza generare audio.
+    if (data.type === 'warmup') {
+        console.log('[tts-worker] warmup start');
+        try {
+            const ok = await ensureModelLocal();
+            console.log('[tts-worker] warmup done ok=' + ok);
+            self.postMessage({ type: 'warmup-ready' });
+        } catch (err) {
+            console.warn('[tts-worker] warmup error', err);
+            self.postMessage({
+                type: 'error',
+                name: (err && err.name) || 'Error',
+                message: String((err && err.message) || err),
+                stack: (err && err.stack) ? String(err.stack) : ''
+            });
+        }
+        return;
+    }
+
     const text = String(data.text || '').trim();
     const voiceId = String(data.voiceId || 'it_IT-riccardo-x_low');
     if (!text) {
-        self.postMessage({ type: 'error', message: 'testo mancante' });
+        self.postMessage({ type: 'error', name: 'Error', message: 'testo mancante' });
         return;
     }
 
     try {
+        // Garantisce modello+config locali in OPFS PRIMA di chiamare predict.
+        await ensureModelLocal();
+
         const tts = await import('https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm');
         if (!tts || typeof tts.predict !== 'function') {
-            self.postMessage({ type: 'error', message: 'modulo vits-web non disponibile' });
+            self.postMessage({ type: 'error', name: 'Error', message: 'modulo vits-web non disponibile' });
             return;
         }
 
-        const path = data.modelPath;
-        if (tts.PATH_MAP && path && !tts.PATH_MAP[voiceId]) {
-            tts.PATH_MAP[voiceId] = path;
-        }
-
+        // PATH_MAP non serve più: modello+config sono già in OPFS con i nomi
+        // che predict() cerca (chiave = ultimo segmento dell'URL HF).
         const blob = await tts.predict(
             { text: text, voiceId: voiceId },
             function (p) {
@@ -54,7 +161,7 @@ self.onmessage = async function (e) {
         );
 
         if (!(blob instanceof Blob) || blob.size === 0) {
-            self.postMessage({ type: 'error', message: 'audio vuoto' });
+            self.postMessage({ type: 'error', name: 'Error', message: 'audio vuoto' });
             return;
         }
 

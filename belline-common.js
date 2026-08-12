@@ -1182,8 +1182,10 @@ const BELLINE_PIPER_CONFIG = Object.assign({
     enabled: true,
     worker: 'resources/tts-worker.js',
     voiceId: 'it_IT-riccardo-x_low',
-    modelPath: 'it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx',
-    timeoutMs: 25000
+    // Timeout "stall-based": scatta solo se il download si ferma per stallMs
+    // consecutivi; il tetto assoluto maxMs copre il caso limite.
+    stallMs: 30000,
+    maxMs: 180000
 }, (window.BELLINE_SERVER && window.BELLINE_SERVER.piper) || {});
 
 // Chiamata all'AI (via Edge Function belline-ai) per il messaggio della stesa corrente
@@ -1885,6 +1887,48 @@ window.addEventListener('pagehide', function () {
     terminateBellinePiperWorker();
 });
 
+// Warm-up: pre-scarica il modello in OPFS in background (dopo l'idle iniziale),
+// così il primo click sul bottone audio è quasi immediato.
+let bellinePiperWarmed = false;
+
+function warmupBellinePiper() {
+    const cfg = BELLINE_PIPER_CONFIG;
+    if (!cfg.enabled || bellinePiperWarmed) return;
+    bellinePiperWarmed = true;
+
+    if (typeof Worker === 'undefined' || typeof navigator === 'undefined' ||
+        !navigator.storage || typeof navigator.storage.getDirectory !== 'function') return;
+
+    let w = null;
+    try {
+        w = new Worker(cfg.worker, { type: 'module' });
+    } catch (e) { return; }
+
+    const timer = setTimeout(function () {
+        try { w.terminate(); } catch (e) { /* ignore */ }
+    }, cfg.maxMs || 180000);
+
+    w.onmessage = function (e) {
+        const d = e.data || {};
+        if (d.type === 'warmup-ready' || d.type === 'error') {
+            clearTimeout(timer);
+            try { w.terminate(); } catch (e2) { /* ignore */ }
+        }
+    };
+    w.onerror = function () {
+        clearTimeout(timer);
+    };
+    w.postMessage({ type: 'warmup' });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(warmupBellinePiper, 4000);
+    });
+} else {
+    setTimeout(warmupBellinePiper, 4000);
+}
+
 // Sintesi vocale open source (Piper, in un Web Worker); il dettaglio delle luci
 // non viene letto. Disponibile per tutti i piani, senza costo server.
 async function speakBellineAdvice() {
@@ -1920,43 +1964,70 @@ async function speakBellineAdvice() {
 
     const result = await new Promise(function (resolve) {
         let settled = false;
-        const timer = setTimeout(function () {
-            if (settled) return;
-            settled = true;
-            resolve({ timeout: true });
-        }, cfg.timeoutMs);
+        // Timeout stall-based: un timer che si resetta a ogni progress.
+        let stallTimer = null;
+        let maxTimer = null;
+
+        const clearTimers = function () {
+            if (stallTimer) { clearTimeout(stallTimer); stallTimer = null; }
+            if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
+        };
+
+        const armStall = function () {
+            if (stallTimer) clearTimeout(stallTimer);
+            stallTimer = setTimeout(function () {
+                if (settled) return;
+                settled = true;
+                clearTimers();
+                worker.removeEventListener('message', onMessage);
+                worker.removeEventListener('error', onError);
+                resolve({ timeout: true });
+            }, cfg.stallMs || 30000);
+        };
 
         const onMessage = function (e) {
             const d = e.data || {};
             if (d.type === 'progress') {
-                if (d.total > 0) {
-                    const pct = Math.min(100, Math.round((d.loaded / d.total) * 100));
-                    btn.textContent = '⏳ Scaricamento voce… ' + pct + '%';
-                }
+                // Download in corso: riarma lo stall timeout e aggiorna la UI.
+                armStall();
+                const pct = Math.min(100, Math.round(((d.percent || 0) / 100) * 100));
+                btn.textContent = '⏳ Scaricamento voce… ' + pct + '%';
                 return;
             }
             if (settled) return;
             settled = true;
-            clearTimeout(timer);
+            clearTimers();
             worker.removeEventListener('message', onMessage);
+            worker.removeEventListener('error', onError);
             resolve({ d });
         };
         const onError = function (e) {
             if (settled) return;
             settled = true;
-            clearTimeout(timer);
+            clearTimers();
+            worker.removeEventListener('message', onMessage);
             worker.removeEventListener('error', onError);
             resolve({ workerError: true, message: String((e && e.message) || 'errore worker') });
         };
 
         worker.addEventListener('message', onMessage);
         worker.addEventListener('error', onError);
-        worker.postMessage({ text: text, voiceId: cfg.voiceId, modelPath: cfg.modelPath });
+        // Tetto assoluto (caso limite): se il download non parte proprio.
+        maxTimer = setTimeout(function () {
+            if (settled) return;
+            settled = true;
+            clearTimers();
+            worker.removeEventListener('message', onMessage);
+            worker.removeEventListener('error', onError);
+            resolve({ timeout: true });
+        }, cfg.maxMs || 180000);
+        armStall();
+        worker.postMessage({ text: text, voiceId: cfg.voiceId });
     });
 
     if (result.timeout) {
-        console.warn('[Belline TTS] Timeout');
-        if (status) status.textContent = '⏳ La voce sta ancora scaricandosi: riprova tra un attimo.';
+        console.warn('[Belline TTS] Timeout (nessun progress per ' + (cfg.stallMs || 30000) + 'ms)');
+        if (status) status.textContent = '⏳ Il download della voce si è fermato: riprova tra un attimo.';
         terminateBellinePiperWorker();
         stopBellineSpeech();
         return;
