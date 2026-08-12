@@ -1130,16 +1130,18 @@ const BELLINE_AI_CONFIG = Object.assign({
     timeoutMs: 25000
 }, (window.BELLINE_SERVER && window.BELLINE_SERVER.ai) || {});
 
-// La sintesi vocale (via Edge Function belline-tts) è riservata ai piani
-// paganti; il gate piano è già applicato lato server. In caso di errore,
-// quota o piano free si ripiega sulle voci di sistema (Web Speech).
-const BELLINE_ELEVENLABS_CONFIG = Object.assign({
-    functionName: 'belline-tts',
-    voiceId: 'JBFqnCBsd6RMkjVDRZzb',
-    modelId: 'eleven_multilingual_v2',
-    timeoutMs: 25000,
-    voiceSettings: { stability: 0.5, similarity_boost: 0.75 }
-}, (window.BELLINE_SERVER && window.BELLINE_SERVER.elevenlabs) || {});
+// Sintesi vocale open source (Piper) nel browser via @diffusionstudio/vits-web:
+// modelli Piper (MIT) eseguiti localmente con ONNX Runtime WASM, gratis per
+// tutti e senza server. Il modello viene scaricato al primo utilizzo e
+// cacheato nell'Origin Private File System. In caso di errore o browser senza
+// supporto, si ripiega sulle voci di sistema (Web Speech).
+const BELLINE_PIPER_CONFIG = Object.assign({
+    enabled: true,
+    cdn: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm',
+    voiceId: 'it_IT-paola-medium',
+    modelPath: 'it/it_IT/paola/medium/it_IT-paola-medium.onnx',
+    timeoutMs: 25000
+}, (window.BELLINE_SERVER && window.BELLINE_SERVER.piper) || {});
 
 // Chiamata all'AI (via Edge Function belline-ai) per il messaggio della stesa corrente
 async function generateBellineAIGeneralMessage() {
@@ -1774,7 +1776,8 @@ function bellineSplitForSpeech(text) {
     return chunks;
 }
 
-// Ripiega sulle voci di sistema (Web Speech) quando ElevenLabs non è disponibile.
+// Ripiega sulle voci di sistema (Web Speech) quando il motore Piper non è
+// disponibile (modello non scaricabile, browser vecchio, quota OPFS).
 // Voce "Alice" (o prima italiana) resa più calda: più lenta e con tono morbido.
 function speakBellineAdviceSystem(text) {
     if (!('speechSynthesis' in window)) {
@@ -1812,7 +1815,32 @@ function speakBellineAdviceSystem(text) {
     });
 }
 
-// Sintesi vocale con ElevenLabs; il dettaglio delle luci non viene letto
+// Carica il modulo vits-web (ESM da CDN) una sola volta e registra la voce
+// italiana paola-medium nel PATH_MAP se assente.
+let bellinePiperModule = null;
+let bellinePiperLoading = null;
+
+function loadBellinePiperModule() {
+    if (bellinePiperModule) return Promise.resolve(bellinePiperModule);
+    if (bellinePiperLoading) return bellinePiperLoading;
+    const cfg = BELLINE_PIPER_CONFIG;
+    bellinePiperLoading = import(cfg.cdn).then(function (mod) {
+        const voiceId = cfg.voiceId;
+        if (mod && mod.PATH_MAP && cfg.modelPath && !mod.PATH_MAP[voiceId]) {
+            mod.PATH_MAP[voiceId] = cfg.modelPath;
+        }
+        bellinePiperModule = mod;
+        return mod;
+    }).catch(function (err) {
+        bellinePiperLoading = null;
+        console.warn('[Belline TTS] Load Piper', err);
+        throw err;
+    });
+    return bellinePiperLoading;
+}
+
+// Sintesi vocale open source (Piper, nel browser); il dettaglio delle luci
+// non viene letto. Disponibile per tutti i piani, senza costo server.
 async function speakBellineAdvice() {
     const btn = document.getElementById('belline-speak-btn');
     if (!btn || btn.disabled) return;
@@ -1828,46 +1856,34 @@ async function speakBellineAdvice() {
     const text = main.trim();
     if (!text) return;
 
-    const cfg = BELLINE_ELEVENLABS_CONFIG;
+    const cfg = BELLINE_PIPER_CONFIG;
+    const canPiper = cfg.enabled &&
+        typeof Audio !== 'undefined' &&
+        typeof navigator.storage !== 'undefined' &&
+        typeof navigator.storage.getDirectory === 'function';
 
-    // ElevenLabs è una feature dei piani a pagamento (API a pagamento):
-    // i free ascoltano con le voci di sistema del browser, gratis.
-    const paidTts = !window.bellineCanListen || window.bellineCanListen();
-
-    // Fallback diretto se il piano è free, se il proxy non è pronto o se non c'è audio supportato
-    if (!paidTts || !window.bellineServer || !window.bellineServer.callFunction ||
-        typeof Audio === 'undefined') {
+    if (!canPiper) {
         speakBellineAdviceSystem(text);
         return;
     }
 
     bellineSpeaking = true;
     btn.classList.add('playing');
-    btn.textContent = '⏳ Preparazione…';
+    btn.textContent = '⏳ Caricamento voce…';
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs);
 
     try {
-        const res = await window.bellineServer.callFunction(cfg.functionName, {
-            body: {
-                text,
-                voiceId: cfg.voiceId,
-                modelId: cfg.modelId,
-                voiceSettings: cfg.voiceSettings || {}
-            },
-            responseType: 'blob'
-        });
+        const mod = await loadBellinePiperModule();
+        if (controller.signal.aborted) { stopBellineSpeech(); return; }
 
-        // Fallback Web Speech in caso di errore del proxy (quota, 403, rete ecc.)
-        if (!res || res.status < 200 || res.status >= 300 || !(res.data instanceof Blob)) {
-            console.warn('[Belline TTS] Proxy status', res && res.status, res && res.error);
-            speakBellineAdviceSystem(text);
-            return;
-        }
+        btn.textContent = '⏳ Preparazione audio…';
 
-        const blob = res.data;
-        if (blob.size === 0) {
+        const blob = await mod.predict({ text, voiceId: cfg.voiceId });
+        if (controller.signal.aborted) { stopBellineSpeech(); return; }
+
+        if (!(blob instanceof Blob) || blob.size === 0) {
             console.warn('[Belline TTS] Risposta audio vuota');
             speakBellineAdviceSystem(text);
             return;
@@ -1882,6 +1898,7 @@ async function speakBellineAdvice() {
         btn.textContent = '⏹ Interrompi';
         await bellineAudio.play();
     } catch (err) {
+        if (controller.signal.aborted) { stopBellineSpeech(); return; }
         console.warn('[Belline TTS]', err);
         speakBellineAdviceSystem(text);
     } finally {
@@ -1889,7 +1906,7 @@ async function speakBellineAdvice() {
     }
 }
 
-// Interrompe la lettura (sia ElevenLabs sia il fallback Web Speech)
+// Interrompe la lettura (sia Piper sia il fallback Web Speech)
 function stopBellineSpeech() {
     bellineSpeaking = false;
     const btn = document.getElementById('belline-speak-btn');

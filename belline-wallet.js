@@ -2,7 +2,7 @@
 // Crediti giornalieri per piano (free 4 / club 8 / expert 12), costo stesa =
 // numero di carte (+1 se Carta Blu, tranne per il Club dove è inclusa).
 // Piano (free/club/expert): fonte di verità SUPABASE server (riga profiles) con
-// cache locale; riserva ElevenLabs e storico illimitato ai paganti.
+// cache locale; riserva lo storico illimitato ai paganti.
 // Il piano pagante si attiva SOLO dal server (webhook Lemon Squeezy → profiles.plan):
 // qui è possibile impostare localmente solo il piano Free.
 // Stato persistito in localStorage.
@@ -268,9 +268,9 @@
         init();
     }
 
-    // Il messaggio TTS (audio ElevenLabs, API a pagamento) è riservato ai piani paganti.
-    // I free usano le voci di sistema del browser (gratuite). Hook consumato in belline-common.js.
-    window.bellineCanListen = function () { return isPaid(); };
+    // Il TTS (Piper, open source, nel browser) è ora gratuito per tutti: l'hook
+    // resta per compatibilità e ritorna sempre true. Consumato in belline-common.js.
+    window.bellineCanListen = function () { return true; };
 
     // Export per console / test
     window.bellineWallet = {

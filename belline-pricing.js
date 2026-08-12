@@ -37,7 +37,7 @@
                 '120 crediti al mese',
                 'Storico illimitato',
                 'Carta Blu inclusa',
-                '🎧 Ascolta il messaggio (audio AI ElevenLabs)'
+                '🎧 Ascolta il messaggio (voce AI)'
             ],
             cta: 'Scegli Club',
             badge: 'Consigliato',
@@ -51,7 +51,7 @@
             features: [
                 '300 crediti al mese',
                 'Follow-up illimitati',
-                '🎧 Ascolta il messaggio (audio AI ElevenLabs)'
+                '🎧 Ascolta il messaggio (voce AI)'
             ],
             cta: 'Scegli Esperto',
             badge: null,

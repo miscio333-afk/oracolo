@@ -2,19 +2,19 @@
 // Copia questo file in config.local.js e inserisci le tue chiavi.
 // config.local.js NON va committato (vedi .gitignore).
 //
-// Da Fase B.1 le chiavi AI (Groq, ElevenLabs) NON vivono più nel client:
-// vivono solo nei Secrets delle Edge Functions (belline-ai, belline-tts)
-// in Dashboard → Edge Functions → Secrets. Rimuovere BELLINE_SERVER di
-// seguito solo per override di sviluppo locale se necessario.
+// Da Fase B.1 le chiavi AI (Groq) NON vivono più nel client: vivono solo nei
+// Secrets delle Edge Functions (belline-ai) in Dashboard → Edge Functions →
+// Secrets. Rimuovere BELLINE_SERVER di seguito solo per override di sviluppo.
+//
+// La sintesi vocale usa Piper (open source) nel browser via
+// @diffusionstudio/vits-web: nessuna chiave né server, gratis per tutti.
 //
 // Se config.local.js non è presente, il sito funziona comunque:
-// perde soltanto il messaggio AI e la voce ElevenLabs (fallback Web Speech).
+// perde soltanto il messaggio AI (fallback rule-based) e la voce Piper
+// (fallback Web Speech di sistema).
 
 window.BELLINE_SECRETS = {
     groq: {
-        apiKey: '' // NON più usato nel client (solo server-side)
-    },
-    elevenlabs: {
         apiKey: '' // NON più usato nel client (solo server-side)
     }
 };
@@ -26,11 +26,11 @@ window.BELLINE_SUPABASE = {
     anonKey: 'sb_publishable_YOUR_KEY'
 };
 
-// Override di sviluppo per il proxy AI/TTS (opzionale): parametri pubblici,
-// nessuna chiave segreta. Default: 'belline-ai' / 'belline-tts'.
+// Override di sviluppo per il proxy AI e il TTS Piper (opzionale): parametri
+// pubblici, nessuna chiave segreta. Default: 'belline-ai' / voce paola-medium.
 // window.BELLINE_SERVER = {
 //     ai: { functionName: 'belline-ai', model: 'llama-3.3-70b-versatile' },
-//     elevenlabs: { functionName: 'belline-tts', voiceId: 'JBFqnCBsd6RMkjVDRZzb' }
+//     piper: { voiceId: 'it_IT-paola-medium', modelPath: 'it/it_IT/paola/medium/it_IT-paola-medium.onnx' }
 // };
 
 // Lemon Squeezy — payment link pubblici degli abbonamenti (nessun segreto qui).
@@ -46,8 +46,9 @@ window.BELLINE_LEMONSQUEEZY = {
     }
 };
 
-// TTS ElevenLabs = feature dei piani a pagamento (Club/Esperto): l'audio AI
-// viene generato solo se il piano (verificato lato server) è pagante.
-// I free usano le voci di sistema del browser (gratuite).
+// TTS = sintesi vocale open source (Piper) eseguita nel browser tramite
+// @diffusionstudio/vits-web: nessun costo server, disponibile per tutti i
+// piani. Il modello (it_IT-paola-medium, ~63MB) si scarica al primo utilizzo
+// e viene cacheato nell'Origin Private File System del browser.
 // Il piano è 'free' di default; i piani paganti arrivano SOLO dal server
 // (webhook Lemon Squeezy → profiles.plan), mai da un override locale.

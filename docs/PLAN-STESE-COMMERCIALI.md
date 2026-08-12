@@ -46,15 +46,16 @@ La **Carta Blu** e le **domande di follow-up** sono i *margin-killer*: costano q
 | Piano | Prezzo | Contenuto |
 |---|---|---|
 | **Free** | 0€ | **4 crediti/giorno** (= 1 lettura completa con Carta Blu, oppure una da 3 + una da 1) + Carta Natale gratis + 5 letture in storico |
-| **Club** (abbonamento mensile) | 6,90€/mese | 120 crediti/mese + storico illimitato + Carta Blu inclusa + **Ascolta il messaggio (audio AI ElevenLabs)** |
+| **Club** (abbonamento mensile) | 6,90€/mese | 120 crediti/mese + storico illimitato + Carta Blu inclusa + **Ascolta il messaggio (voce AI)** |
 | **Pack crediti** (non scadono) | 3,90€ = 50 · 6,90€ = 100 · 12,90€ = 250 | per chi non vuole abbonarsi |
-| **Lettore Esperto** | 14,90€/mese | 300 crediti + follow-up illimitati + **Ascolta il messaggio (audio AI ElevenLabs)** |
+| **Lettore Esperto** | 14,90€/mese | 300 crediti + follow-up illimitati + **Ascolta il messaggio (voce AI)** |
 
 Ancoraggio ai competitor EU ma aggressivo (6,90€ vs 9,90€) per il lancio.
 
-**Regola monetizzazione TTS:** *Ascolta il messaggio* usa ElevenLabs (API a pagamento) ed è
-riservato a **Club** ed **Esperto**; il piano Free ascolta solo con le voci di sistema del
-browser (gratuite, zero chiamate API). Gate `bellineCanListen()` in `belline-wallet.js`.
+**Regola monetizzazione TTS:** *Ascolta il messaggio* usa **Piper** (open source, nel browser via
+`@diffusionstudio/vits-web`): **gratis per tutti i piani**, nessun costo server né chiave API.
+In caso di browser/supporto mancante si ripiega sulle voci di sistema (Web Speech, gratuite).
+L'hook `bellineCanListen()` in `belline-wallet.js` ritorna sempre `true` (compatibilità).
 
 ---
 
@@ -78,7 +79,7 @@ L'iscrizione obbligatoria è un drop-off nel B2C italiano: il pattern vincente �
 
 ### Fase B — Monetizzazione
 - **Backend:** Supabase (Auth anon → email → Google, Postgres per wallet/storico, Edge Functions come proxy API). Alternativa: Cloudflare Workers + D1.
-- **Proxy API:** le chiavi Groq/ElevenLabs passano solo server-side → rate limiting + limiti per utente.
+- **Proxy API:** la chiave Groq passa solo server-side → rate limiting + limiti per utente. Il TTS (Piper) gira nel browser, nessuna chiave/server.
 - **Pagamenti:** **Lemon Squeezy** (merchant of record: gestisce IVA OSS e fatture EU) con fallback Stripe. Se app mobile: IAP Apple/Google (obbligatorio per gli store).
 - **Costi Lemon Squeezy:** nessun canone mensile né tier a pagamento → si parte gratis, si paga solo per transazione. Costi variabili: 5%+0,50€/transazione (tutto incluso: tax/VAT, fraude, dispute), +1,5% transazioni internazionali, +1,5% pagamenti PayPal, +0,5% rinnovi abbonamento, ~1% payout bonifico internazionale. Il piano Pro (fee su licenze software) NON serve: vendiamo crediti/abbonamenti, non licenze. API gratuita (limite 300 req/min).
 
@@ -132,7 +133,7 @@ Per 1.000 utenti, ~20 letture/giorno:
 | Voce | Costo/mese |
 |---|---|
 | Groq (LLM) | 0€ (modelli free tier, quota settimanale) |
-| ElevenLabs (solo audio per paganti) | 15-25€ |
+| Piper TTS (open source, nel browser) | 0€ |
 | Supabase Free/Optimized | 0-25€ |
 | Lemon Squeezy | 5% + 0,50€/transazione (incluso nel prezzo) |
 | **Margine lordo** | **~85-90%** |
@@ -169,7 +170,7 @@ Per 1.000 utenti, ~20 letture/giorno:
 ## 10. Sicurezza
 
 - File con chiavi non committati (`.gitignore`): `config.local.js`, `shots/`, `.DS_Store`.
-- **Rotazione consigliata** delle chiavi Groq ed ElevenLabs (erano hardcoded nel client): eseguire prima di qualsiasi deploy pubblico.
+- **Rotazione consigliata** della chiave Groq (era hardcoded nel client): eseguire prima di qualsiasi deploy pubblico. La voce Piper non usa chiavi (gira nel browser).
 - La protezione definitiva arriva in Fase B (le chiavi vivono solo server-side).
 
 ---
