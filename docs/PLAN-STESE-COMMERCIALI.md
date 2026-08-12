@@ -108,6 +108,21 @@ Il fondatore ha **solo un conto postale (BancoPosta)**: funziona per ricevere i 
 
 **Note:** finché la review è in corso i checkout funzionano, ma i payout restano in attesa. L'IBAN deve essere intestato al fondatore (KYC); con partita IVA servirà poi un conto dedicato. I bonifici escono in USD → Poste converte in EUR con la propria commissione.
 
+### Dominio e hosting — oracolo-belline.com (Vercel Hobby)
+
+- **Dominio:** `oracolo-belline.com` acquistato dal registrar Vercel — **$11,25/anno** (rinnovo $11,25). TLD `.it` non acquistabile da Vercel; Register.it per `.it` costa 58,55€ → scelto il `.com`.
+- **Hosting:** Vercel **Hobby (gratis)** — dominio custom + SSL automatico + CDN inclusi. Upgrade a **Pro ($20/mese)** solo quando il traffico cresce (banda 1TB, password protection, build più veloci).
+- **Implicazioni codice:** **nessuna modifica**. L'unico URL generato usa `window.location.origin` (belline-backend.js:112, magic link) → si adatta al dominio. Asset relativi; nessun URL hardcoded a `oracolo-belline.vercel.app`.
+- **Supabase:** API/DB/Edge Functions invariati (URL fissi `woakwnvcphruuvbtfcqe.supabase.co`). **⚠️ Richiesta 1 configurazione manuale:** aggiungere `https://oracolo-belline.com/**` alla lista **Redirect URLs** (Auth → URL Configuration) o il magic link email si rompe sul nuovo dominio.
+- **Lemon Squeezy:** nessun impatto (checkout su `oracolo-belline.lemonsqueezy.com`, webhook su Edge Function Supabase).
+- **Fallback:** `https://oracolo-belline.vercel.app` continua a funzionare dopo il cambio dominio.
+
+#### To-do — dominio oracolo-belline.com
+- [ ] Acquisto dominio su Vercel ($11,25/anno)
+- [ ] Attach al progetto (SSL automatico)
+- [ ] Supabase Auth → Redirect URLs: aggiungere `https://oracolo-belline.com/**`
+- [ ] Verifica: HTTPS 200 su nuovo dominio + login email funzionante
+
 ---
 
 ## 6. Costi mensili stimati e margine
