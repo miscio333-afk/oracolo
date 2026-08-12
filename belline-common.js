@@ -1173,20 +1173,16 @@ const BELLINE_AI_CONFIG = Object.assign({
     timeoutMs: 25000
 }, (window.BELLINE_SERVER && window.BELLINE_SERVER.ai) || {});
 
-// Sintesi vocale open source (Piper) nel browser via @diffusionstudio/vits-web,
-// eseguita in un Web Worker (resources/tts-worker.js) così la pagina non si
-// congela durante il download del modello e l'inferenza. Il modello viene
-// scaricato al primo utilizzo e cacheato nell'Origin Private File System.
+// Sintesi vocale neurale server-side (Microsoft Edge TTS) via Edge Function
+// 'belline-tts': nessun download di modelli nel browser, nessun crash WASM,
+// qualità voce neurale Azure. Voce di default: it-IT-IsabellaNeural.
 // In caso di errore o browser senza supporto, si ripiega sulle voci di sistema.
-const BELLINE_PIPER_CONFIG = Object.assign({
+const BELLINE_EDGE_TTS_CONFIG = Object.assign({
     enabled: true,
-    worker: 'resources/tts-worker.js',
-    voiceId: 'it_IT-riccardo-x_low',
-    // Timeout "stall-based": scatta solo se il download si ferma per stallMs
-    // consecutivi; il tetto assoluto maxMs copre il caso limite.
-    stallMs: 30000,
-    maxMs: 180000
-}, (window.BELLINE_SERVER && window.BELLINE_SERVER.piper) || {});
+    functionName: 'belline-tts',
+    voice: 'it-IT-IsabellaNeural',
+    timeoutMs: 30000
+}, (window.BELLINE_SERVER && window.BELLINE_SERVER.edgeTts) || {});
 
 // Chiamata all'AI (via Edge Function belline-ai) per il messaggio della stesa corrente
 async function generateBellineAIGeneralMessage() {
@@ -1821,8 +1817,8 @@ function bellineSplitForSpeech(text) {
     return chunks;
 }
 
-// Ripiega sulle voci di sistema (Web Speech) quando il motore Piper non è
-// disponibile (modello non scaricabile, browser vecchio, quota OPFS).
+// Ripiega sulle voci di sistema (Web Speech) quando la sintesi Edge TTS non è
+// disponibile (errore server, offline, browser vecchio).
 // Voce "Alice" (o prima italiana) resa più calda: più lenta e con tono morbido.
 function speakBellineAdviceSystem(text) {
     if (!('speechSynthesis' in window)) {
@@ -1860,77 +1856,8 @@ function speakBellineAdviceSystem(text) {
     });
 }
 
-// Worker TTS Piper: esegue download modello + inferenza fuori dal main thread.
-let bellinePiperWorker = null;
-
-function getBellinePiperWorker() {
-    if (bellinePiperWorker) return bellinePiperWorker;
-    const cfg = BELLINE_PIPER_CONFIG;
-    try {
-        bellinePiperWorker = new Worker(cfg.worker, { type: 'module' });
-    } catch (e) {
-        bellinePiperWorker = null;
-    }
-    return bellinePiperWorker;
-}
-
-// Termina il worker TTS (es. timeout o chiusura pagina): al prossimo click
-// viene ricreato pulito. Il modello resta cacheato in OPFS.
-function terminateBellinePiperWorker() {
-    if (bellinePiperWorker) {
-        try { bellinePiperWorker.terminate(); } catch (e) { /* ignore */ }
-        bellinePiperWorker = null;
-    }
-}
-
-window.addEventListener('pagehide', function () {
-    terminateBellinePiperWorker();
-});
-
-// Warm-up: pre-scarica il modello in OPFS in background (dopo l'idle iniziale),
-// così il primo click sul bottone audio è quasi immediato.
-let bellinePiperWarmed = false;
-
-function warmupBellinePiper() {
-    const cfg = BELLINE_PIPER_CONFIG;
-    if (!cfg.enabled || bellinePiperWarmed) return;
-    bellinePiperWarmed = true;
-
-    if (typeof Worker === 'undefined' || typeof navigator === 'undefined' ||
-        !navigator.storage || typeof navigator.storage.getDirectory !== 'function') return;
-
-    let w = null;
-    try {
-        w = new Worker(cfg.worker, { type: 'module' });
-    } catch (e) { return; }
-
-    const timer = setTimeout(function () {
-        try { w.terminate(); } catch (e) { /* ignore */ }
-    }, cfg.maxMs || 180000);
-
-    w.onmessage = function (e) {
-        const d = e.data || {};
-        if (d.type === 'warmup-ready' || d.type === 'error') {
-            clearTimeout(timer);
-            try { w.terminate(); } catch (e2) { /* ignore */ }
-        }
-    };
-    w.onerror = function () {
-        clearTimeout(timer);
-    };
-    w.postMessage({ type: 'warmup' });
-}
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-        setTimeout(warmupBellinePiper, 4000);
-    });
-} else {
-    setTimeout(warmupBellinePiper, 4000);
-}
-
-// Sintesi vocale open source (Piper, in un Web Worker); il dettaglio delle luci
-// non viene letto. Disponibile per tutti i piani, senza costo server.
+// Sintesi vocale neurale server-side (Microsoft Edge TTS); il dettaglio delle
+// luci non viene letto. Disponibile per tutti i piani, senza costo server.
 async function speakBellineAdvice() {
     const btn = document.getElementById('belline-speak-btn');
     if (!btn || btn.disabled) return;
@@ -1946,127 +1873,61 @@ async function speakBellineAdvice() {
     const text = main.trim();
     if (!text) return;
 
-    const cfg = BELLINE_PIPER_CONFIG;
-    const worker = getBellinePiperWorker();
-    const canPiper = cfg.enabled && !!worker &&
-        typeof Audio !== 'undefined';
+    const cfg = BELLINE_EDGE_TTS_CONFIG;
+    const canEdgeTts = cfg.enabled &&
+        typeof Audio !== 'undefined' &&
+        window.bellineServer && typeof window.bellineServer.callFunction === 'function';
 
-    if (!canPiper) {
+    if (!canEdgeTts) {
         speakBellineAdviceSystem(text);
         return;
     }
 
     bellineSpeaking = true;
     btn.classList.add('playing');
-    btn.textContent = '⏳ Caricamento voce…';
+    btn.textContent = '⏳ Preparazione voce…';
 
     const status = document.getElementById('belline-status');
 
-    const result = await new Promise(function (resolve) {
-        let settled = false;
-        // Timeout stall-based: un timer che si resetta a ogni progress.
-        let stallTimer = null;
-        let maxTimer = null;
+    const controller = new AbortController();
+    const timer = setTimeout(function () { controller.abort(); }, cfg.timeoutMs || 30000);
 
-        const clearTimers = function () {
-            if (stallTimer) { clearTimeout(stallTimer); stallTimer = null; }
-            if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
-        };
+    let blob = null;
+    try {
+        const res = await window.bellineServer.callFunction(cfg.functionName, {
+            body: { text: text, voice: cfg.voice },
+            responseType: 'blob'
+        });
 
-        const armStall = function () {
-            if (stallTimer) clearTimeout(stallTimer);
-            stallTimer = setTimeout(function () {
-                if (settled) return;
-                settled = true;
-                clearTimers();
-                worker.removeEventListener('message', onMessage);
-                worker.removeEventListener('error', onError);
-                resolve({ timeout: true });
-            }, cfg.stallMs || 30000);
-        };
+        if (!res || res.status < 200 || res.status >= 300 || !(res.data instanceof Blob)) {
+            console.warn('[Belline TTS] Edge status', res && res.status, res && res.error);
+            if (status) status.textContent = 'La voce non è disponibile in questo momento: uso la voce di sistema.';
+            speakBellineAdviceSystem(text);
+            return;
+        }
 
-        const onMessage = function (e) {
-            const d = e.data || {};
-            if (d.type === 'progress') {
-                // Download in corso: riarma lo stall timeout e aggiorna la UI.
-                armStall();
-                const pct = Math.min(100, Math.round(((d.percent || 0) / 100) * 100));
-                btn.textContent = '⏳ Scaricamento voce… ' + pct + '%';
-                return;
-            }
-            if (d.type === 'heartbeat') {
-                // Il worker sta lavorando (fonemizzatore/onnxruntime/inferenza):
-                // riarma lo stall timeout e mostra lo stato "preparazione".
-                armStall();
-                btn.textContent = '⏳ Preparazione voce…';
-                return;
-            }
-            if (settled) return;
-            settled = true;
-            clearTimers();
-            worker.removeEventListener('message', onMessage);
-            worker.removeEventListener('error', onError);
-            resolve({ d });
-        };
-        const onError = function (e) {
-            if (settled) return;
-            settled = true;
-            clearTimers();
-            worker.removeEventListener('message', onMessage);
-            worker.removeEventListener('error', onError);
-            resolve({ workerError: true, message: String((e && e.message) || 'errore worker') });
-        };
-
-        worker.addEventListener('message', onMessage);
-        worker.addEventListener('error', onError);
-        // Tetto assoluto (caso limite): se il download non parte proprio.
-        maxTimer = setTimeout(function () {
-            if (settled) return;
-            settled = true;
-            clearTimers();
-            worker.removeEventListener('message', onMessage);
-            worker.removeEventListener('error', onError);
-            resolve({ timeout: true });
-        }, cfg.maxMs || 180000);
-        armStall();
-        worker.postMessage({ text: text, voiceId: cfg.voiceId });
-    });
-
-    if (result.timeout) {
-        console.warn('[Belline TTS] Timeout (nessun progress per ' + (cfg.stallMs || 30000) + 'ms)');
-        if (status) status.textContent = '⏳ Il download della voce si è fermato: riprova tra un attimo.';
-        terminateBellinePiperWorker();
-        stopBellineSpeech();
-        return;
-    }
-
-    if (result.workerError) {
-        console.warn('[Belline TTS]', result.message);
+        blob = res.data;
+        if (blob.size === 0) {
+            console.warn('[Belline TTS] Audio vuoto');
+            if (status) status.textContent = 'Audio non valido: uso la voce di sistema.';
+            speakBellineAdviceSystem(text);
+            return;
+        }
+    } catch (err) {
+        if (controller.signal.aborted) {
+            console.warn('[Belline TTS] Timeout');
+            if (status) status.textContent = '⏳ La voce tarda ad arrivare: riprova tra un attimo.';
+            stopBellineSpeech();
+            return;
+        }
+        console.warn('[Belline TTS]', err);
         if (status) status.textContent = 'La voce non è disponibile in questo momento: uso la voce di sistema.';
         speakBellineAdviceSystem(text);
         return;
+    } finally {
+        clearTimeout(timer);
     }
 
-    const d = result.d;
-    if (d.type === 'error') {
-        console.warn('[Belline TTS] Worker error', d.name, d.message, d.stack || '');
-        if (status) status.textContent = 'La voce non è disponibile in questo momento: uso la voce di sistema.';
-        speakBellineAdviceSystem(text);
-        return;
-    }
-
-    // L'audio arriva dal worker come ArrayBuffer (trasferito, senza copie):
-    // ricostruiamo il Blob nel main thread per evitare problemi di
-    // `instanceof Blob` cross-realm tra worker e pagina.
-    const buf = d.buffer;
-    if (!(buf instanceof ArrayBuffer) || buf.byteLength === 0) {
-        console.warn('[Belline TTS] Audio non valido');
-        if (status) status.textContent = 'Audio non valido: uso la voce di sistema.';
-        speakBellineAdviceSystem(text);
-        return;
-    }
-
-    const blob = new Blob([buf], { type: d.mime || 'audio/wav' });
     console.log('[Belline TTS] audio pronto', blob.size, blob.type);
 
     if (bellineAudioUrl) URL.revokeObjectURL(bellineAudioUrl);
@@ -2079,7 +1940,7 @@ async function speakBellineAdvice() {
     if (status) status.textContent = '🎧 Voce pronta…';
 
     // Riproduce. Se l'autoplay policy blocca il primo play (lo user activation
-    // del click può essere scaduto dopo il download del modello), ripetiamo il
+    // del click può essere scaduto dopo l'attesa della sintesi), ripetiamo il
     // play al prossimo click/tocco dell'utente.
     let unlocked = false;
     const replay = async function () {
@@ -2115,7 +1976,7 @@ async function speakBellineAdvice() {
     }
 }
 
-// Interrompe la lettura (sia Piper sia il fallback Web Speech)
+// Interrompe la lettura (sia Edge TTS sia il fallback Web Speech)
 function stopBellineSpeech() {
     bellineSpeaking = false;
     const btn = document.getElementById('belline-speak-btn');

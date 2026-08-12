@@ -268,7 +268,7 @@
         init();
     }
 
-    // Il TTS (Piper, open source, nel browser) è ora gratuito per tutti: l'hook
+    // Il TTS (Edge TTS, server-side, voce neurale) è gratuito per tutti: l'hook
     // resta per compatibilità e ritorna sempre true. Consumato in belline-common.js.
     window.bellineCanListen = function () { return true; };
 
