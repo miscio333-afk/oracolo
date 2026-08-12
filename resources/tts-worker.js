@@ -4,6 +4,20 @@
 // l'inferenza. Il modello viene cacheato nell'Origin Private File System.
 // Caricato come module worker da belline-common.js.
 
+// Onnxruntime-web usa i thread WASM (SharedArrayBuffer) quando
+// navigator.hardwareConcurrency > 1. In alcuni browser (es. Safari) e in un
+// worker questi thread crashano con errori emscripten numerici. Forziamo
+// numThreads=1: l'audio è breve e la qualità non cambia, ma funziona ovunque.
+(function () {
+    try {
+        const proto = Object.getPrototypeOf(navigator);
+        const d = Object.getOwnPropertyDescriptor(proto, 'hardwareConcurrency');
+        if (d && d.configurable) {
+            Object.defineProperty(proto, 'hardwareConcurrency', { get: function () { return 1; } });
+        }
+    } catch (e) { /* se l'override fallisce si usa il valore di default */ }
+})();
+
 self.onmessage = async function (e) {
     const data = e.data || {};
     const text = String(data.text || '').trim();
