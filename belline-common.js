@@ -1971,7 +1971,7 @@ async function speakBellineAdvice() {
 
     const d = result.d;
     if (d.type === 'error') {
-        console.warn('[Belline TTS] Worker error', d.message);
+        console.warn('[Belline TTS] Worker error', d.name, d.message, d.stack || '');
         if (status) status.textContent = 'La voce non è disponibile in questo momento: uso la voce di sistema.';
         speakBellineAdviceSystem(text);
         return;

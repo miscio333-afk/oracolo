@@ -52,6 +52,38 @@ self.onmessage = async function (e) {
             [buffer]
         );
     } catch (err) {
-        self.postMessage({ type: 'error', message: String((err && err.message) || err) });
+        self.postMessage({
+            type: 'error',
+            name: (err && err.name) || 'Error',
+            message: String((err && err.message) || err),
+            stack: (err && err.stack) ? String(err.stack) : ''
+        });
     }
 };
+
+// Cattura gli errori emscripten/WebAssembly che possono lanciare valori numerici
+// (es. crash di allocazione memoria) e li inoltra con il massimo dettaglio.
+self.addEventListener('unhandledrejection', function (ev) {
+    const r = ev && ev.reason;
+    self.postMessage({
+        type: 'error',
+        name: (r && r.name) || 'UnhandledRejection',
+        message: String((r && r.message) || r),
+        stack: (r && r.stack) ? String(r.stack) : '',
+        reasonType: typeof r
+    });
+    ev.preventDefault();
+});
+
+self.addEventListener('error', function (ev) {
+    self.postMessage({
+        type: 'error',
+        name: 'WorkerError',
+        message: String((ev && ev.message) || 'errore worker'),
+        filename: ev && ev.filename,
+        lineno: ev && ev.lineno,
+        colno: ev && ev.colno,
+        stack: ''
+    });
+    ev.preventDefault();
+});
