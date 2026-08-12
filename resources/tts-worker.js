@@ -1,0 +1,51 @@
+// Oracolo di Belline — TTS Web Worker (Piper via @diffusionstudio/vits-web).
+// Esegue il TTS fuori dal main thread così la pagina non si congela mai
+// durante il download del modello, la creazione della sessione ONNX e
+// l'inferenza. Il modello viene cacheato nell'Origin Private File System.
+// Caricato come module worker da belline-common.js.
+
+self.onmessage = async function (e) {
+    const data = e.data || {};
+    const text = String(data.text || '').trim();
+    const voiceId = String(data.voiceId || 'it_IT-riccardo-x_low');
+    if (!text) {
+        self.postMessage({ type: 'error', message: 'testo mancante' });
+        return;
+    }
+
+    try {
+        const tts = await import('https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm');
+        if (!tts || typeof tts.predict !== 'function') {
+            self.postMessage({ type: 'error', message: 'modulo vits-web non disponibile' });
+            return;
+        }
+
+        const path = data.modelPath;
+        if (tts.PATH_MAP && path && !tts.PATH_MAP[voiceId]) {
+            tts.PATH_MAP[voiceId] = path;
+        }
+
+        const blob = await tts.predict(
+            { text: text, voiceId: voiceId },
+            function (p) {
+                if (p && typeof p.loaded === 'number' && typeof p.total === 'number' && p.total > 0) {
+                    self.postMessage({
+                        type: 'progress',
+                        loaded: p.loaded,
+                        total: p.total,
+                        percent: Math.min(100, Math.round((p.loaded / p.total) * 100))
+                    });
+                }
+            }
+        );
+
+        if (!(blob instanceof Blob) || blob.size === 0) {
+            self.postMessage({ type: 'error', message: 'audio vuoto' });
+            return;
+        }
+
+        self.postMessage({ type: 'result', audio: blob });
+    } catch (err) {
+        self.postMessage({ type: 'error', message: String((err && err.message) || err) });
+    }
+};
