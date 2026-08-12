@@ -49,7 +49,5 @@ window.BELLINE_LEMONSQUEEZY = {
 // TTS ElevenLabs = feature dei piani a pagamento (Club/Esperto): l'audio AI
 // viene generato solo se il piano (verificato lato server) è pagante.
 // I free usano le voci di sistema del browser (gratuite).
-// Il piano è 'free' di default.
-//
-// Per lo sviluppo locale puoi forzare un piano dall'override qui sotto:
-// window.BELLINE_PLAN_OVERRIDE = 'club'; // 'free' | 'club' | 'expert'
+// Il piano è 'free' di default; i piani paganti arrivano SOLO dal server
+// (webhook Lemon Squeezy → profiles.plan), mai da un override locale.

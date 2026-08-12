@@ -3,15 +3,13 @@
 // i Pack crediti sono esclusi. Club/Esperto aprono SEMPRE il checkout di Lemon
 // Squeezy (config BELLINE_LEMONSQUEEZY), con prefill uid/email se il backend è
 // pronto; l'attivazione reale avviene lato server via webhook (belline-ls-webhook).
-// Il piano demo locale resta solo come fallback se i link LMS mancano (offline/dev).
+// Il piano Free è l'unico impostabile localmente (bellineWallet.setPlan('free')).
 // Caricare DOPO belline-wallet.js (non è obbligatorio che backend sia pronto).
 
 (function () {
     'use strict';
 
-    // Piani: come da piano commerciale (docs/PLAN-STESE-COMMERCIALI.md);
-    // in Fase A i paganti NON pagano: differenze demo = più crediti/giorno,
-    // storico illimitato, TTS ElevenLabs e Carta Blu inclusa per il Club.
+    // Piani: come da piano commerciale (docs/PLAN-STESE-COMMERCIALI.md).
     var PLAN_CHANGE_EVENT = 'belline:plan-changed';
 
     // Dati dei piani (fonte: docs/PLAN-STESE-COMMERCIALI.md, §3 Pricing)
@@ -105,8 +103,8 @@
             '</article>';
     }
 
-    function demoNoteHTML() {
-        return '<p class="pricing-demo-note">✦ Scegliendo Club o Lettore Esperto si apre il checkout ' +
+    function checkoutNoteHTML() {
+        return '<p class="pricing-checkout-note">✦ Scegliendo Club o Lettore Esperto si apre il checkout ' +
             'sicuro di Lemon Squeezy (carta, PayPal o Apple Pay): il piano si attiva in pochi secondi ' +
             'e puoi disdirlo quando vuoi. Free è e resta gratuito, senza carta.</p>';
     }
@@ -115,7 +113,7 @@
 
     // Apre il checkout LMS per il piano: aggiunge ?checkout[email] e
     // ?checkout[custom][uid] se il backend è pronto (prefill, non obbligatorio).
-    // Ritorna false solo se il link di checkout non è configurato (→ demo locale).
+    // Ritorna false solo se il link di checkout non è configurato (nessun grant).
     function startCheckout(planKey) {
         var cfg = window.BELLINE_LEMONSQUEEZY;
         var base = cfg && cfg.checkout ? cfg.checkout[planKey] : null;
@@ -184,7 +182,7 @@
 
         var html = '<div class="pricing-grid">';
         for (var i = 0; i < PLANS.length; i++) html += cardHTML(PLANS[i]);
-        html += '</div>' + demoNoteHTML();
+        html += '</div>' + checkoutNoteHTML();
         el.innerHTML = html;
 
         var buttons = el.querySelectorAll('.pricing-cta');
@@ -194,13 +192,17 @@
                 if (!key) return;
 
                 if (key !== 'free') {
-                    // Piani paganti → sempre checkout Lemon Squeezy. Demo solo se
-                    // mancano i link (es. sviluppo locale senza config LMS).
+                    // Piani paganti → sempre checkout Lemon Squeezy. Se il link
+                    // manca (config assente) non attiviamo nulla in locale.
                     if (startCheckout(key)) return;
+                    var status = document.getElementById('belline-status');
+                    if (status) status.textContent = '✦ Il checkout per ' + key +
+                        ' non è ancora disponibile: riprova a breve.';
+                    return;
                 }
 
                 if (window.bellineWallet && typeof window.bellineWallet.setPlan === 'function') {
-                    window.bellineWallet.setPlan(key);
+                    window.bellineWallet.setPlan('free');
                 }
             });
         }

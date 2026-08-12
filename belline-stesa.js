@@ -1,6 +1,6 @@
 // Oracolo di Belline — Stesa libera con domanda.
 // Dipende da: belline.js (dati), belline-common.js (logica condivisa).
-// Definisce gli hook specifici della stesa libera (domanda + Carta Blu + demo video).
+// Definisce gli hook specifici della stesa libera (domanda + Carta Blu).
 
 bellineMode = 'free';
 

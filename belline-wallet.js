@@ -1,9 +1,11 @@
-// Oracolo di Belline — Wallet crediti (Fase A, locale/demo).
-// Crediti demo giornalieri per piano (free 4 / club 8 / expert 12), costo stesa =
+// Oracolo di Belline — Wallet crediti.
+// Crediti giornalieri per piano (free 4 / club 8 / expert 12), costo stesa =
 // numero di carte (+1 se Carta Blu, tranne per il Club dove è inclusa).
-// Piano (free/club/expert): fonte di verità SUPA server (riga profiles) con cache
-// locale; riserva ElevenLabs e storico illimitato ai paganti.
-// Stato persistito in localStorage; nessun pagamento reale in questa fase.
+// Piano (free/club/expert): fonte di verità SUPABASE server (riga profiles) con
+// cache locale; riserva ElevenLabs e storico illimitato ai paganti.
+// Il piano pagante si attiva SOLO dal server (webhook Lemon Squeezy → profiles.plan):
+// qui è possibile impostare localmente solo il piano Free.
+// Stato persistito in localStorage.
 // Caricare DOPO belline-common.js (o belline-page.js): wrappa startBellineReading.
 
 (function () {
@@ -16,15 +18,15 @@
         planStorageKey: 'belline.plan.v1'
     };
 
-    // Crediti demo giornalieri per piano (piacevolezza Fase A; i 120/300 mensili
-    // dei paganti diventeranno reali con i pagamenti).
+    // Crediti giornalieri per piano (i 120/300 mensili dei paganti reali
+    // arriveranno quando il wallet gestirà il conteggio mensile).
     var DAILY_ALLOWANCE = { free: 4, club: 8, expert: 12 };
     var PLAN_CHANGE_EVENT = 'belline:plan-changed';
 
     // ---- Piano utente ----
     // Fonte di verità: riga profiles lato Supabase (garantita dal trigger per ogni
     // utenza, anonima ed email). Cache server in memoria + flag persistito in
-    // localStorage come fallback offline. Override dev: window.BELLINE_PLAN_OVERRIDE.
+    // localStorage come fallback offline.
 
     var serverPlan = null; // piano letto dal server (fonte di verità)
 
@@ -33,10 +35,6 @@
     }
 
     function getPlan() {
-        if (window.BELLINE_PLAN_OVERRIDE === 'club' || window.BELLINE_PLAN_OVERRIDE === 'expert' ||
-            window.BELLINE_PLAN_OVERRIDE === 'free') {
-            return window.BELLINE_PLAN_OVERRIDE;
-        }
         if (serverPlan) return serverPlan;
         try {
             var raw = localStorage.getItem(CONFIG.planStorageKey);
@@ -47,16 +45,17 @@
     }
 
     function setPlan(plan) {
-        var p = normalizePlan(plan);
-        if (!p) return false;
-        try { localStorage.setItem(CONFIG.planStorageKey, p); } catch (e) { /* ignore */ }
-        // La scelta locale sblocca subito; poi il server diventa la fonte di verità.
+        // Solo il piano Free è impostabile localmente; Club/Esperto arrivano dal
+        // server (webhook Lemon Squeezy → profiles.plan) e si aggiornano in
+        // refreshFromServer.
+        if (plan !== 'free') return false;
+        try { localStorage.setItem(CONFIG.planStorageKey, 'free'); } catch (e) { /* ignore */ }
         serverPlan = null; // ricarica dal server appena pronto (o rimane local se offline)
-        topUpToAllowance(); // piacevolezza demo: la nuova dotazione si applica da oggi
+        topUpToAllowance();
         if (window.bellineServer && window.bellineServer.ready) {
             window.bellineServer.ready().then(function (ok) {
                 if (ok) {
-                    if (window.bellineServer.setPlan) window.bellineServer.setPlan(p);
+                    if (window.bellineServer.setPlan) window.bellineServer.setPlan('free');
                 }
             });
         }
@@ -66,7 +65,7 @@
     }
 
     // Se la dotazione del piano attivo è maggiore di quella oggi disponibile,
-    // alza i crediti odierni al nuovo tetto (solo demo, mai sotto quanto già speso).
+    // alza i crediti odierni al nuovo tetto (mai sotto quanto già speso).
     function topUpToAllowance() {
         var st = getState();
         var allow = dailyAllowance();
@@ -83,7 +82,7 @@
         return getPlan() !== 'free';
     }
 
-    // Crediti demo giornalieri per il piano corrente.
+    // Crediti giornalieri per il piano corrente.
     function dailyAllowance() {
         return DAILY_ALLOWANCE[getPlan()] || CONFIG.freeDaily;
     }
@@ -244,7 +243,6 @@
                 finish();
             });
 
-            if (window.BELLINE_PLAN_OVERRIDE) { finish(); return; }
             window.bellineServer.fetchPlan().then(function (plan) {
                 var p = normalizePlan(plan);
                 if (p) {

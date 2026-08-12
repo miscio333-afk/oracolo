@@ -1406,7 +1406,7 @@ select.natal-input {
     color: var(--gold-light);
 }
 
-.pricing-demo-note {
+.pricing-checkout-note {
     text-align: center;
     font-size: 0.85rem;
     color: rgba(244, 239, 221, 0.6);
@@ -1420,7 +1420,7 @@ select.natal-input {
         gap: 18px;
     }
 
-    .pricing-demo-note {
+    .pricing-checkout-note {
         text-align: left;
     }
 }

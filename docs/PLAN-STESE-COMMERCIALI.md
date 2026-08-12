@@ -73,8 +73,8 @@ L'iscrizione obbligatoria è un drop-off nel B2C italiano: il pattern vincente �
 ### Fase A — Locale (MVP, nessun server) — implementata
 - Stato e storico in `localStorage`; wallet crediti locale con reset giornaliero.
 - Chiavi API spostate fuori dal codice pubblico in `config.local.js` (gitignored).
-- Nessun pagamento reale: crediti "demo" per misurare la conversione potenziale.
-- Piano utente simulato: `belline.plan.v1` in localStorage (`free`|`club`|`expert`, default `free`); override dev `BELLINE_PLAN_OVERRIDE` in `config.local.js`. Per testare un pagante: `bellineWallet.setPlan('club')` da console. In Fase B questa flag viene sostituita dal piano verificato lato server.
+- Nessun pagamento reale in Fase A: crediti giornalieri per misurare la conversione potenziale.
+- Piano utente `free` di default; i piani paganti si attivano solo lato server (webhook Lemon Squeezy → `profiles.plan`). Nessun override locale: `bellineWallet.setPlan()` accetta solo `'free'`.
 
 ### Fase B — Monetizzazione
 - **Backend:** Supabase (Auth anon → email → Google, Postgres per wallet/storico, Edge Functions come proxy API). Alternativa: Cloudflare Workers + D1.
@@ -145,7 +145,7 @@ Per 1.000 utenti, ~20 letture/giorno:
 
 ## 9. Roadmap esecutiva
 
-- **Fase A (verifica reale):** wallet crediti demo (4/giorno), storico di 5 letture, banner teaser account al 6° salvataggio, chiavi rimosse dal codice pubblico. Metrica: **quanti utenti superano le 5 letture/anominano lo storico → tasso di conversione potenziale**.
+- **Fase A (verifica reale):** wallet crediti giornalieri (4/giorno), storico di 5 letture, banner teaser account al 6° salvataggio, chiavi rimosse dal codice pubblico. Metrica: **quanti utenti superano le 5 letture/anominano lo storico → tasso di conversione potenziale**.
 - **Fase B:** Supabase auth + wallet server-side + proxy + Lemon Squeezy.
 - **Beta 10-20 utenti reali:** test del prezzo Club 6,90€/mese e pack 3,90€ prima del lancio pubblico.
 
@@ -163,7 +163,7 @@ Per 1.000 utenti, ~20 letture/giorno:
 
 - [x] Chip wallet "🪙 X/4 crediti oggi" sulle pagine di lettura (stesa, narrativa). L'index è solo una landing (nessuna estrazione → nessun wallet).
 - [x] Costo progressivo per lettura (1/3/7 ± Carta Blu).
-- [x] Dopo la lettura completa (4 crediti, o in generale quando il portafoglio è insufficiente): blocco dolce "crediti demo esauriti (si ricaricano domani)", reset al giorno successivo.
+- [x] Dopo la lettura completa (4 crediti, o in generale quando il portafoglio è insufficiente): redirect all'Upgrade (`pricing.html?reason=credits`), reset al giorno successivo.
 - [x] Storico delle ultime 5 letture (data, domanda, carte, testo) persistito e navigabile.
 - [x] Teaser account al 6° salvataggio.
 - [x] Con `config.local.js` assente: il sito continua a funzionare senza AI/TTS (fallback già esistente).
