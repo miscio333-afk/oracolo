@@ -1994,6 +1994,13 @@ async function speakBellineAdvice() {
                 btn.textContent = '⏳ Scaricamento voce… ' + pct + '%';
                 return;
             }
+            if (d.type === 'heartbeat') {
+                // Il worker sta lavorando (fonemizzatore/onnxruntime/inferenza):
+                // riarma lo stall timeout e mostra lo stato "preparazione".
+                armStall();
+                btn.textContent = '⏳ Preparazione voce…';
+                return;
+            }
             if (settled) return;
             settled = true;
             clearTimers();

@@ -108,12 +108,15 @@ async function ensureModelLocal() {
 self.onmessage = async function (e) {
     const data = e.data || {};
 
-    // Warm-up: pre-scarica il modello in OPFS senza generare audio.
+    // Warm-up: pre-scarica il modello in OPFS e pre-carica il modulo vits-web
+    // (che include piper_phonemize.data ~18MB e onnxruntime) così il primo
+    // click sul bottone audio trova tutto già pronto.
     if (data.type === 'warmup') {
         console.log('[tts-worker] warmup start');
         try {
             const ok = await ensureModelLocal();
-            console.log('[tts-worker] warmup done ok=' + ok);
+            const tts = await import('https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm');
+            console.log('[tts-worker] warmup done ok=' + ok + ' module=' + (tts && typeof tts.predict === 'function'));
             self.postMessage({ type: 'warmup-ready' });
         } catch (err) {
             console.warn('[tts-worker] warmup error', err);
@@ -133,6 +136,13 @@ self.onmessage = async function (e) {
         self.postMessage({ type: 'error', name: 'Error', message: 'testo mancante' });
         return;
     }
+
+    // Heartbeat: il main thread resetta lo stall timeout su ogni heartbeat,
+    // così un primo click lento (caricamento piper/onnxruntime + inferenza)
+    // non viene scambiato per un blocco. Inviamo un tick ogni 5s.
+    const heartbeat = setInterval(function () {
+        self.postMessage({ type: 'heartbeat' });
+    }, 5000);
 
     try {
         // Garantisce modello+config locali in OPFS PRIMA di chiamare predict.
@@ -160,6 +170,8 @@ self.onmessage = async function (e) {
             }
         );
 
+        clearInterval(heartbeat);
+
         if (!(blob instanceof Blob) || blob.size === 0) {
             self.postMessage({ type: 'error', name: 'Error', message: 'audio vuoto' });
             return;
@@ -173,6 +185,7 @@ self.onmessage = async function (e) {
             [buffer]
         );
     } catch (err) {
+        clearInterval(heartbeat);
         self.postMessage({
             type: 'error',
             name: (err && err.name) || 'Error',
