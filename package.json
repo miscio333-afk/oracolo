@@ -1,0 +1,9 @@
+{
+  "name": "oracolo-belline",
+  "private": true,
+  "description": "L'Oracolo di Belline, sito statico multipagina",
+  "scripts": {
+    "test": "node --test",
+    "check": "for file in *.js; do node --check \"$file\" || exit 1; done"
+  }
+}

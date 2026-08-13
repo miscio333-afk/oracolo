@@ -54,10 +54,10 @@ function renderNarrativePreview() {
         return;
     }
     const serie = window.bellineSeriesName(natal.series);
-    const sexPart = sexLabel
-        ? ` · Sesso: <strong class="text-amber-300">${sexLabel}</strong>`
+    const safeSexPart = sexLabel
+        ? ` · Sesso: <strong class="text-amber-300">${escapeBellineHtml(sexLabel)}</strong>`
         : '<span class="text-yellow-200/70 text-sm"> · seleziona il sesso</span>';
-    preview.innerHTML = `<p class="text-yellow-100">La tua Luce di nascita è <strong class="text-amber-300">${natal.name}</strong> · <span class="text-yellow-200/80">${serie}</span>${sexPart}</p>`;
+    preview.innerHTML = `<p class="text-yellow-100">La tua Luce di nascita è <strong class="text-amber-300">${escapeBellineHtml(natal.name)}</strong> · <span class="text-yellow-200/80">${escapeBellineHtml(serie)}</span>${safeSexPart}</p>`;
 }
 
 // Cambio sesso: aggiorna stato, stile delle pillole e preview

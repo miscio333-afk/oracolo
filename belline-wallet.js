@@ -38,8 +38,9 @@
         if (serverPlan) return serverPlan;
         try {
             var raw = localStorage.getItem(CONFIG.planStorageKey);
-            var p = normalizePlan(raw);
-            if (p) return p;
+            // Una cache locale non può concedere un piano pagante: l'entitlement
+            // deve essere confermato dal profilo Supabase per ogni sessione.
+            if (raw === 'free') return 'free';
         } catch (e) { /* storage non disponibile: free */ }
         return 'free';
     }

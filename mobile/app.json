@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "L'Oracolo di Belline",
+    "slug": "oracolo-belline",
+    "scheme": "belline",
+    "description": "Le Luci di Belline, sempre con te.",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#150D26",
+    "primaryColor": "#B8860B",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Usiamo Face ID per proteggere il tuo accesso a Belline."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#150D26",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      "expo-asset"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.oracolobelline.app",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.oracolobelline.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#150D26",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": true
+    },
+    "extra": {
+      "environment": "development"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

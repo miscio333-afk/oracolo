@@ -9,6 +9,15 @@
 //   - window.bellineSexValue()         -> sesso selezionato ('male'|'female'|null) su narrativa (opzionale)
 //   - window.bellineSexLabel()         -> etichetta leggibile del sesso (opzionale)
 
+function escapeBellineHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Stato globale della stesa in corso
 let bellineDrawn = [];
 let bellineDeckCache = [];
@@ -619,7 +628,7 @@ function renderBellineResults() {
             const serie = window.bellineSeriesName(natal.series);
             const sexLabel = window.bellineSexLabel ? window.bellineSexLabel() : '';
             const suffix = sexLabel ? ` · Sesso: ${sexLabel}` : '';
-            banner.innerHTML = `La tua Luce di nascita: <strong>${natal.name}</strong><span class="text-sm"> (${serie})${suffix}</span>`;
+            banner.innerHTML = `La tua Luce di nascita: <strong>${escapeBellineHtml(natal.name)}</strong><span class="text-sm"> (${escapeBellineHtml(serie)})${escapeBellineHtml(suffix)}</span>`;
             if (heading && heading.parentNode) {
                 heading.parentNode.insertBefore(banner, heading.nextSibling);
             } else {
@@ -666,11 +675,15 @@ function renderBellineResults() {
         const cardBack = document.createElement('img');
         cardBack.src = 'resources/belline/card_dorso.webp';
         cardBack.alt = 'Retro carta';
+        cardBack.loading = 'lazy';
+        cardBack.decoding = 'async';
         cardBack.className = 'card-back ' + size;
 
         const cardFront = document.createElement('img');
         cardFront.src = window.bellineImagePath(card);
         cardFront.alt = card.name;
+        cardFront.loading = 'lazy';
+        cardFront.decoding = 'async';
         cardFront.className = 'card-front ' + size;
 
         flip.appendChild(cardBack);
@@ -770,11 +783,11 @@ function revealBellineCardFace(container, card) {
 
     if (label) {
         label.innerHTML = `
-            <div class="text-sm font-bold card-name">${card.name}</div>
+            <div class="text-sm font-bold card-name">${escapeBellineHtml(card.name)}</div>
             <div class="text-xs mt-1 flex items-center justify-center gap-1">
-                <span class="serie-chip polarity-${polarity}">${polarityLabel}</span>
+                <span class="serie-chip polarity-${escapeBellineHtml(polarity)}">${escapeBellineHtml(polarityLabel)}</span>
             </div>
-            <div class="text-[11px] text-gray-300 mt-1">${serieLabel}</div>
+            <div class="text-[11px] text-gray-300 mt-1">${escapeBellineHtml(serieLabel)}</div>
         `;
     }
 
@@ -1749,10 +1762,10 @@ function renderBellineAdviceCards() {
         const head = posTitle ? `${posTitle} · ${i + 1}` : String(i + 1);
         return `<div class="advice-card-item">
             <div class="mb-1">
-                <span class="font-bold text-amber-300">${head}. ${c.name}</span>
-                <span class="text-amber-200/80 text-sm"> (${polLabel} · ${serieName})</span>
+                <span class="font-bold text-amber-300">${escapeBellineHtml(head)}. ${escapeBellineHtml(c.name)}</span>
+                <span class="text-amber-200/80 text-sm"> (${escapeBellineHtml(polLabel)} · ${escapeBellineHtml(serieName)})</span>
             </div>
-            <p class="text-yellow-100/90 text-base">${meaning} <span class="text-amber-200 font-semibold">Consiglio: ${advice}</span></p>
+            <p class="text-yellow-100/90 text-base">${escapeBellineHtml(meaning)} <span class="text-amber-200 font-semibold">Consiglio: ${escapeBellineHtml(advice)}</span></p>
         </div>`;
     }).join('');
 }
@@ -2149,11 +2162,11 @@ function renderNatalDetail(card, n) {
     result.classList.remove('hidden');
     result.innerHTML = `
         <div class="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-6 items-center max-w-3xl mx-auto bg-cream rounded-3xl border-2 border-yellow-600 p-6">
-            <img src="resources/belline/card_${String(n).padStart(2, '0')}.webp" alt="${card.name}" class="w-40 mx-auto rounded-xl border-2 border-yellow-600">
+            <img src="resources/belline/card_${String(n).padStart(2, '0')}.webp" alt="${escapeBellineHtml(card.name)}" loading="lazy" decoding="async" class="w-40 mx-auto rounded-xl border-2 border-yellow-600">
             <div>
-                <h3 class="card-name text-3xl mb-1">La tua carta natale: ${card.name}</h3>
-                <p class="text-sm text-gray-600 mb-3">Numero ${n} · ${window.bellineSeriesName(card.series)}</p>
-                <p class="text-gray-800">${card.meaning}</p>
+                <h3 class="card-name text-3xl mb-1">La tua carta natale: ${escapeBellineHtml(card.name)}</h3>
+                <p class="text-sm text-gray-600 mb-3">Numero ${escapeBellineHtml(n)} · ${escapeBellineHtml(window.bellineSeriesName(card.series))}</p>
+                <p class="text-gray-800">${escapeBellineHtml(card.meaning)}</p>
                 <button class="mystical-button px-6 py-2 rounded-full mt-4" onclick="openNatalCardDetail(window.getBellineCardById(${n}))">Scopri di più</button>
             </div>
         </div>
@@ -2179,7 +2192,7 @@ function calculateNatalCard() {
 
     const preview = document.getElementById('natal-top-preview');
     if (preview) {
-        preview.innerHTML = `<p class="text-yellow-100">La tua Luce di nascita è <strong class="text-amber-300">${card.name}</strong> · <span class="text-yellow-200/80">${window.bellineSeriesName(card.series)}</span></p>`;
+        preview.innerHTML = `<p class="text-yellow-100">La tua Luce di nascita è <strong class="text-amber-300">${escapeBellineHtml(card.name)}</strong> · <span class="text-yellow-200/80">${escapeBellineHtml(window.bellineSeriesName(card.series))}</span></p>`;
     }
 
     result.classList.remove('hidden');

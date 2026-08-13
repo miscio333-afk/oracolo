@@ -42,7 +42,7 @@
 - Realistic card shuffling animation using Anime.js
 - Hover effects on cards with 3D tilt
 - Smooth card flip animations revealing artwork
-- Particle effects when cards are drawn using p5.js
+- Particle effects when cards are drawn using Canvas 2D
 
 ### Mystical Visual Effects
 - Floating particle system creating ethereal atmosphere
@@ -74,7 +74,7 @@
 
 ## Technical Implementation:
 - Smooth card animations using Anime.js
-- Particle effects with p5.js for mystical atmosphere
+- Particle effects with Canvas 2D for mystical atmosphere
 - Local storage for saving readings and preferences
 - Responsive design for mobile tarot reading
 - Progressive enhancement ensuring core functionality works without JavaScript

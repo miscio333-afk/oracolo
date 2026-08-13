@@ -38,16 +38,15 @@
 
 ### Used Libraries
 - **Anime.js**: Card animations, shuffling effects, smooth transitions
-- **p5.js**: Particle systems, aurora background effects, mystical atmosphere
+- **Canvas 2D**: Particle systems and mystical atmosphere
 - **Pixi.js**: Advanced visual effects, glowing auras, light rays
 - **Splitting.js**: Text reveal animations for card interpretations
-- **Typed.js**: Typewriter effect for mystical messages
-- **Splide**: Card carousel for browsing tarot deck
+- **Web Speech / Edge TTS**: Voice fallback and server-side neural speech
 
 ### Effect Implementation
 
 #### Background Effects
-- **Aurora Gradient Flow**: Subtle, slow-moving gradient background using p5.js
+- **Aurora Gradient Flow**: Subtle, slow-moving gradient background using CSS and Canvas 2D
 - **Floating Particles**: Gentle particle system creating ethereal atmosphere
 - **Sacred Geometry**: Subtle geometric patterns overlay
 

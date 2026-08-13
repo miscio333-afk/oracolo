@@ -7,7 +7,12 @@
 ├── index.html              # Single page: Oracolo di Belline (home + app)
 ├── styles.css              # Design system condiviso
 ├── belline.js              # Dati del mazzo di Belline (52 Luci + Carta Blu)
-├── belline-page.js         # Logica della pagina (stesa, advice, TTS, particelle)
+├── belline-common.js       # Logica condivisa, advice, TTS e particelle
+├── belline-stesa.js        # Stesa libera
+├── belline-narrativa.js    # Passato, Presente, Futuro
+├── belline-natale.js       # Carta Natale
+├── belline-backend.js      # Supabase Auth, wallet e storico
+├── belline-wallet.js       # Crediti e gating client-side
 ├── tools/                  # Script di generazione delle carte
 └── resources/
     ├── belline/            # 53 carte Belline in SVG
@@ -31,13 +36,13 @@
 
 - **Stesa:** click sul mazzo → estrazione → reveal animato (Anime.js)
 - **Advice:** generazione del messaggio generale con dettaglio per carta e polarità (favorevole/avversa/neutra)
-- **TTS:** lettura vocale del messaggio via ElevenLabs (voice premade, `eleven_multilingual_v2`)
-- **Particelle:** polvere d'oro scintillante con p5.js (disattivata con `prefers-reduced-motion`)
+- **TTS:** Edge TTS server-side tramite Edge Function, con fallback Web Speech
+- **Particelle:** polvere d'oro con Canvas 2D nativo (disattivata con `prefers-reduced-motion`)
 - **Sfondi:** aurora animata + vignettatura/grana via CSS
 
 ## Libraries
 - **Anime.js:** animazioni di reveal e micro-interazioni
-- **p5.js:** particelle di sfondo
+- **Canvas 2D:** particelle di sfondo
 - **Tailwind CSS:** utility classes
 - **Fonts:** Cinzel, Quattrocento Sans, MedievalSharp
 
