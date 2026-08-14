@@ -36,6 +36,12 @@ let bellineNatalSelected = null;
 // Sesso del consultante sulla stesa narrativa: 'male' | 'female' | null
 let bellineSex = null;
 
+// Apertura e chiusura fisse di ogni lettura: il sistema le aggiunge sempre,
+// sia al messaggio AI sia al fallback rule-based, così ogni stesa comincia
+// con il saluto di Isabella e si chiude con il richiamo al libero arbitrio.
+const BELLINE_READING_INTRO = 'Buongiorno, sono Isabella, assistente di Marcel Belline. Oggi sono qui per aiutarti a vedere più chiaro. Prenditi un momento per respirare... ed iniziamo con la lettura della stesa';
+const BELLINE_READING_OUTRO = '... e ricordati che il destino non è scritto. Le carte ti mostrano una possibilità, ma sei tu che scegli. Hai il libero arbitrio, non dimenticarlo mai.';
+
 // Particle system self-contained (Canvas 2D nativo, senza p5.js).
 // Polvere d'oro + scia di scintille che segue il cursore/touch.
 function initializeBellineParticles() {
@@ -1758,6 +1764,42 @@ function renderBellineFollowUp() {
     panel.appendChild(own);
 }
 
+// Prependi il saluto fisso solo se il primo paragrafo non lo contiene già.
+function bellineWithIntro(paragraphs) {
+    const list = Array.isArray(paragraphs) ? paragraphs : [];
+    const first = String(list[0] || '').trim().toLowerCase();
+    if (first.startsWith('buongiorno, sono isabella')) return list;
+    return [BELLINE_READING_INTRO, ...list];
+}
+
+// Appende la card di chiusura fissa come ultimo elemento del messaggio.
+// Viene chiamata DOPO le card derivate così il testo di chiusura è l'ultimo
+// sia visivamente sia nella sintesi vocale (che legge tutti .advice-paragraph-text).
+function bellineAppendOutroCard() {
+    const box = document.getElementById('belline-advice');
+    if (!box) return;
+    const last = [...box.querySelectorAll('.advice-paragraph-text')].pop();
+    const lastText = (last ? last.textContent : '').trim().toLowerCase();
+    if (lastText.includes('libero arbitrio, non dimenticarlo mai')) return;
+
+    const card = document.createElement('div');
+    card.className = 'advice-paragraph-card advice-reveal final advice-tint-5';
+    card.style.animationDelay = '360ms';
+
+    const title = document.createElement('div');
+    title.className = 'advice-para-title';
+    title.setAttribute('aria-hidden', 'true');
+    title.textContent = 'Chiusura';
+    card.appendChild(title);
+
+    const p = document.createElement('p');
+    p.className = 'advice-paragraph-text';
+    p.textContent = BELLINE_READING_OUTRO;
+    card.appendChild(p);
+    bellineAddMagicMotes(card, 99);
+    box.appendChild(card);
+}
+
 // Consiglio generale: sintesi di polarità e abbinamenti tra tutte le carte estratte
 async function renderBellineAdvice(aiPromise) {
     const goods = bellineDrawn.filter(c => window.bellinePolarityOf(c) === 'good').length;
@@ -1781,10 +1823,11 @@ async function renderBellineAdvice(aiPromise) {
 
     const aiText = aiPromise ? await aiPromise : await generateBellineAIGeneralMessage();
     if (aiText) {
-        renderBellineGeneralCards(splitBellineMessageToParagraphs(aiText));
+        renderBellineGeneralCards(bellineWithIntro(splitBellineMessageToParagraphs(aiText)));
         renderBellineDerivedCards();
         renderBellineFollowUp();
         renderBellineAdviceCards();
+        bellineAppendOutroCard();
         setBellineSpeakEnabled(true);
         return;
     }
@@ -1856,10 +1899,11 @@ async function renderBellineAdvice(aiPromise) {
 
     paragraphs.push('Consiglio pratico: ' + buildBellinePracticalAdvice(!!question));
 
-    renderBellineGeneralCards(paragraphs);
+    renderBellineGeneralCards(bellineWithIntro(paragraphs));
     renderBellineDerivedCards();
     renderBellineFollowUp();
     renderBellineAdviceCards();
+    bellineAppendOutroCard();
     setBellineSpeakEnabled(true);
 }
 

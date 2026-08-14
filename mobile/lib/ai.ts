@@ -28,6 +28,7 @@ export function buildMobileReadingPrompt(cards: BellineCard[], question: string,
     `Carte estratte (${cards.length}):`,
     cards.map(cardDescription).join('\n'),
     'Scrivi 5-7 paragrafi separati da una riga vuota. Chiudi con un consiglio pratico concreto.',
+    'Non aprire con saluti né presentazioni e non chiudere con riflessioni sul destino o sul libero arbitrio: il sistema aggiunge automaticamente un saluto iniziale e una chiusura fissa.',
   ].join('\n\n');
 }
 

@@ -1,3 +1,25 @@
+const READING_INTRO = 'Buongiorno, sono Isabella, assistente di Marcel Belline. Oggi sono qui per aiutarti a vedere più chiaro. Prenditi un momento per respirare... ed iniziamo con la lettura della stesa';
+const READING_OUTRO = '... e ricordati che il destino non è scritto. Le carte ti mostrano una possibilità, ma sei tu che scegli. Hai il libero arbitrio, non dimenticarlo mai.';
+
+// Apertura e chiusura fisse di ogni lettura: le prepende/accoda sempre, senza
+// duplicarle se il testo AI le contiene già.
+function wrapReadingParagraphs(paragraphs) {
+  const list = Array.isArray(paragraphs) ? paragraphs : [];
+  const out = [];
+  const first = String(list[0] || '').trim().toLowerCase();
+  if (!first.startsWith('buongiorno, sono isabella')) {
+    out.push(READING_INTRO);
+  }
+  for (const paragraph of list) {
+    out.push(paragraph);
+  }
+  const last = String(out[out.length - 1] || '').trim().toLowerCase();
+  if (!last.includes('libero arbitrio, non dimenticarlo mai')) {
+    out.push(READING_OUTRO);
+  }
+  return out;
+}
+
 const SERIES_LABELS = {
   prime: 'Carte Prime',
   sole: 'Luce I · Sole',
@@ -112,4 +134,4 @@ function buildRuleBasedReading(cards, options = {}) {
   };
 }
 
-module.exports = { buildRuleBasedReading, findPairings, seriesLabel };
+module.exports = { buildRuleBasedReading, findPairings, seriesLabel, wrapReadingParagraphs };

@@ -134,6 +134,7 @@ function buildBellineNarrativeAIPrompt() {
     lines.push('4) Esito — l\'insieme delle tre tappe in luce della Carta Natale del consultante, con un consiglio pratico finale.');
     lines.push('Per ogni carta del passato, presente e futuro, la spiegazione dell\'immagine (iconografia) viene SEMPRE prima del significato.');
     lines.push('Cita per nome ogni Luce, in italiano, senza introdurre luci o figure inventate. Ogni paragrafo è un blocco di 2-3 frasi scorrevoli senza elenchi puntati.');
+    lines.push('Non aprire con saluti né presentazioni e non chiudere con riflessioni sul destino o sul libero arbitrio: il sistema aggiunge automaticamente un saluto iniziale e una chiusura fissa.');
 
     if (window.bellineReflectionText) {
         lines.push(`Prima di leggere il messaggio, il consultante ha scritto la sua riflessione spontanea: «${window.bellineReflectionText}». Raccogline gli spunti con rispetto, senza contraddirli, e intrecciali alla lettura.`);

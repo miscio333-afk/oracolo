@@ -221,6 +221,7 @@ function buildBellineAIPrompt() {
     lines.push(`Cita per nome OGNI carta della lista precedente con il suo significato. La stesa conta esattamente ${drawnCount} carta(e): NON creare e NON nominare nessuna carta, seme o figura che non sia nella lista (vietate: carte inventate o non estratte) e NON parlare di posizioni, luci o carte in più di quelle estratte.`);
     lines.push('Non usare elenchi puntati: ogni paragrafo è un blocco di 2-3 frasi scorrevoli, separato dagli altri da una riga vuota.');
     lines.push('Rilassa la creatività narrativa a favore della precisione: meglio un testo meno poetico ma fedele alle carte indicate, citando ogni carta esattamente una volta.');
+    lines.push('Non aprire con saluti né presentazioni e non chiudere con riflessioni sul destino o sul libero arbitrio: il sistema aggiunge automaticamente un saluto iniziale e una chiusura fissa.');
 
     return lines.join('\n');
 }

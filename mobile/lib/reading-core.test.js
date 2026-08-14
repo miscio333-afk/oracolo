@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { buildRuleBasedReading } = require('./reading-core');
+const { buildRuleBasedReading, wrapReadingParagraphs } = require('./reading-core');
 
 const cards = [
   {
@@ -52,4 +52,32 @@ test('does not count the Carta Blu as a negative card', () => {
   assert.equal(result.gauge.hasBlue, true);
   assert.equal(result.gauge.goods, 0);
   assert.match(result.practicalAdvice, /protezione/i);
+});
+
+test('wraps a reading with the fixed intro and outro', () => {
+  const wrapped = wrapReadingParagraphs(['Primo paragrafo', 'Secondo paragrafo']);
+
+  assert.equal(wrapped.length, 4);
+  assert.match(wrapped[0], /Buongiorno, sono Isabella, assistente di Marcel Belline\./);
+  assert.match(wrapped[wrapped.length - 1], /il destino non è scritto/);
+  assert.equal(wrapped[1], 'Primo paragrafo');
+});
+
+test('does not duplicate intro/outro if the AI already included them', () => {
+  const already = wrapReadingParagraphs([
+    'Buongiorno, sono Isabella, assistente di Marcel Belline. Come va?',
+    'Una lettura.',
+    'Ricordati che il destino non è scritto... hai il libero arbitrio, non dimenticarlo mai.',
+  ]);
+
+  assert.equal(already.length, 3);
+  assert.match(already[0], /^Buongiorno, sono Isabella/);
+  assert.match(already[2], /libero arbitrio, non dimenticarlo mai/);
+});
+
+test('wraps empty or missing input with both fixed paragraphs', () => {
+  const empty = wrapReadingParagraphs([]);
+  assert.equal(empty.length, 2);
+  assert.match(empty[0], /^Buongiorno, sono Isabella/);
+  assert.match(empty[1], /il destino non è scritto/);
 });

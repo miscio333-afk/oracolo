@@ -6,7 +6,7 @@ import { MysticalButton } from './MysticalButton';
 import { Screen } from './Screen';
 import { bellineAdvice, bellineNatalCard, bellinePolarityLabel, bellineSeriesName, drawBellineCards, getBellineCardById, type BellineCard } from '../lib/belline';
 import { completeReadingEntry, saveReading, updateReadingEntry } from '../lib/history';
-import { buildRuleBasedReading, type RuleBasedReading } from '../lib/reading';
+import { buildRuleBasedReading, wrapReadingParagraphs, type RuleBasedReading } from '../lib/reading';
 import { generateMobileAIGeneralMessage } from '../lib/ai';
 import { useAuth } from '../lib/auth';
 import { speakWithSystemVoice, stopSystemVoice, synthesizeReading } from '../lib/tts';
@@ -160,15 +160,17 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
   function applyAiMessage(drawnCards: BellineCard[], paragraphs: string[] | null) {
     if (currentEntryId.current) {
       const advice = paragraphs && paragraphs.length
-        ? paragraphs.join('\n')
-        : buildRuleBasedReading(drawnCards, { question }).paragraphs.join('\n');
+        ? wrapReadingParagraphs(paragraphs).join('\n')
+        : wrapReadingParagraphs(buildRuleBasedReading(drawnCards, { question }).paragraphs).join('\n');
       void completeReadingEntry(currentEntryId.current, advice);
     }
-    if (paragraphs) setAiParagraphs(paragraphs);
+    if (paragraphs) setAiParagraphs(wrapReadingParagraphs(paragraphs));
   }
 
   function completeReading(drawnCards: BellineCard[]) {
-    setReading(buildRuleBasedReading(drawnCards, { question }));
+    const rule = buildRuleBasedReading(drawnCards, { question });
+    rule.paragraphs = wrapReadingParagraphs(rule.paragraphs);
+    setReading(rule);
     setAiParagraphs(null);
     setTtsUri(null);
     setTtsError(null);
@@ -403,7 +405,9 @@ function ReadingResult({ reading, aiParagraphs, isGeneratingAI, isPreparingTTS, 
       <MysticalButton onPress={onSpeak} secondary>{isPreparingTTS ? 'Preparazione voce…' : isPlaying ? 'Interrompi voce' : 'Ascolta il messaggio'}</MysticalButton>
       {paragraphs.map((paragraph, index) => (
         <View key={paragraph} style={styles.paragraphCard}>
-          <Text style={styles.paragraphTitle}>{index === 0 ? 'Esordio' : index === 1 ? 'Panorama' : `Luce ${index - 1}`}</Text>
+          <Text style={styles.paragraphTitle}>
+            {index === 0 ? 'Saluto' : index > 0 && index === paragraphs.length - 1 ? 'Chiusura' : index === 1 ? 'Esordio' : index === 2 ? 'Panorama' : `Luce ${index - 1}`}
+          </Text>
           <Text style={styles.paragraphText}>{paragraph}</Text>
         </View>
       ))}

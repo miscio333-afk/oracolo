@@ -2,6 +2,7 @@ import type { BellineCard } from './belline';
 
 declare const require: (path: string) => {
   buildRuleBasedReading: (cards: BellineCard[], options?: { question?: string }) => RuleBasedReading;
+  wrapReadingParagraphs: (paragraphs: string[]) => string[];
 };
 
 export type RuleBasedReading = {
@@ -18,3 +19,4 @@ export type RuleBasedReading = {
 const core = require('./reading-core.js');
 
 export const buildRuleBasedReading = core.buildRuleBasedReading;
+export const wrapReadingParagraphs = core.wrapReadingParagraphs;
