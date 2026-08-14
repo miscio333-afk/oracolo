@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MysticalButton } from './MysticalButton';
 
 const STORAGE_KEY = 'belline.mobile.disclaimer.v1';
@@ -40,9 +40,9 @@ export function DisclaimerModal() {
               fiducia a un professionista.
             </Text>
           </ScrollView>
-          <Pressable accessibilityRole="button" onPress={accept} style={styles.acceptArea}>
-            <MysticalButton>Ho compreso e proseguo</MysticalButton>
-          </Pressable>
+          <View style={styles.acceptArea}>
+            <MysticalButton onPress={accept}>Ho compreso e proseguo</MysticalButton>
+          </View>
         </View>
       </View>
     </Modal>

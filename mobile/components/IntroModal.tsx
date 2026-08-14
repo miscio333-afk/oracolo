@@ -1,4 +1,4 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MysticalButton } from './MysticalButton';
 
 export function IntroModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
@@ -15,9 +15,9 @@ export function IntroModal({ visible, onClose }: { visible: boolean; onClose: ()
             </Text>
             <Text style={styles.muted}>Buon viaggio.</Text>
           </ScrollView>
-          <Pressable accessibilityRole="button" onPress={onClose} style={styles.acceptArea}>
-            <MysticalButton>Comincio</MysticalButton>
-          </Pressable>
+          <View style={styles.acceptArea}>
+            <MysticalButton onPress={onClose}>Comincio</MysticalButton>
+          </View>
         </View>
       </View>
     </Modal>
