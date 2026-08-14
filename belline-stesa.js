@@ -168,7 +168,7 @@ function buildBellineAIPrompt() {
     const question = questionInput ? questionInput.value.trim() : '';
 
     const lines = [];
-    lines.push('Sei una cartomante esperto dell\'oracolo di Belline (54 carte tradizionali italiane). Il tuo mazzo NON è il tarot di Marsiglia: le carte hanno nomi propri come "La Tavola", "Il Dispotismo", "L\'Intelligenza".');
+    lines.push('Sei un esperto dell\'oracolo di Belline, il mazzo delle 52 Luci (più la Carta Blu). Ogni Luce ha un nome proprio come "La Tavola", "Il Dispotismo", "L\'Intelligenza".');
     if (question) {
         lines.push(`Il consultante ha posto questa domanda: «${question}».`);
         if (bellineQuestionAmbito) {
@@ -177,6 +177,10 @@ function buildBellineAIPrompt() {
         }
     } else {
         lines.push('Il consultante non ha posto una domanda specifica: dai una sintesi generale della stesa.');
+    }
+
+    if (window.bellineReflectionText) {
+        lines.push(`Prima di leggere il messaggio, il consultante ha scritto la sua riflessione spontanea: «${window.bellineReflectionText}». Raccogline gli spunti con rispetto, senza contraddirli, e intrecciali alla lettura.`);
     }
 
     lines.push('');
@@ -214,7 +218,7 @@ function buildBellineAIPrompt() {
         lines.push(`3,4,5..) Procedi per ciascuna delle ${drawnCount} carte estratte, nell\'ordine: per ciascuna, PARTI dall\'iconografia (cosa raffigura l\'immagine), poi spiega il significato, come si lega alla domanda e cosa suggerisce di fare;`);
     }
     lines.push('Ultimo paragrafo) Consiglio pratico finale, concreto e orientato all\'azione.');
-    lines.push(`Cita per nome OGNI carta della lista precedente con il suo significato. La stesa conta esattamente ${drawnCount} carta(e): NON creare e NON nominare nessuna carta, seme o figura che non sia nella lista (vietati: arcani, papesse, cavalieri, spade, denari, coppe, bastoni) e NON parlare di posizioni, luci o carte in più di quelle estratte.`);
+    lines.push(`Cita per nome OGNI carta della lista precedente con il suo significato. La stesa conta esattamente ${drawnCount} carta(e): NON creare e NON nominare nessuna carta, seme o figura che non sia nella lista (vietate: carte inventate o non estratte) e NON parlare di posizioni, luci o carte in più di quelle estratte.`);
     lines.push('Non usare elenchi puntati: ogni paragrafo è un blocco di 2-3 frasi scorrevoli, separato dagli altri da una riga vuota.');
     lines.push('Rilassa la creatività narrativa a favore della precisione: meglio un testo meno poetico ma fedele alle carte indicate, citando ogni carta esattamente una volta.');
 

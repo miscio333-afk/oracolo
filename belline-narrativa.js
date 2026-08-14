@@ -94,7 +94,7 @@ function initNarrativaPage() {
 function buildBellineNarrativeAIPrompt() {
     const natal = bellineNatalSelected || bellineNatalCardFromInputs();
     const lines = [];
-    lines.push('Sei una cartomante esperto dell\'oracolo di Belline (54 carte tradizionali italiane). Il tuo mazzo NON è il tarot di Marsiglia: le carte hanno nomi propri come "La Tavola", "Il Dispotismo", "L\'Intelligenza".');
+    lines.push('Sei un esperto dell\'oracolo di Belline, il mazzo delle 52 Luci (più la Carta Blu). Ogni Luce ha un nome proprio come "La Tavola", "Il Dispotismo", "L\'Intelligenza".');
 
     if (natal) {
         const serie = window.bellineSeriesName(natal.series);
@@ -133,7 +133,11 @@ function buildBellineNarrativeAIPrompt() {
     lines.push('3) Futuro — dove vai: PARTI dall\'iconografia della carta del futuro (cosa raffigura), poi la tendenza che si sta preparando;');
     lines.push('4) Esito — l\'insieme delle tre tappe in luce della Carta Natale del consultante, con un consiglio pratico finale.');
     lines.push('Per ogni carta del passato, presente e futuro, la spiegazione dell\'immagine (iconografia) viene SEMPRE prima del significato.');
-    lines.push('Cita per nome ogni carta, in italiano, senza introdurre arcani o figure inventate. Ogni paragrafo è un blocco di 2-3 frasi scorrevoli senza elenchi puntati.');
+    lines.push('Cita per nome ogni Luce, in italiano, senza introdurre luci o figure inventate. Ogni paragrafo è un blocco di 2-3 frasi scorrevoli senza elenchi puntati.');
+
+    if (window.bellineReflectionText) {
+        lines.push(`Prima di leggere il messaggio, il consultante ha scritto la sua riflessione spontanea: «${window.bellineReflectionText}». Raccogline gli spunti con rispetto, senza contraddirli, e intrecciali alla lettura.`);
+    }
 
     return lines.join('\n');
 }

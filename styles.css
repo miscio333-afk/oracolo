@@ -1528,3 +1528,113 @@ select.natal-input {
     border-radius: 999px;
     padding: 10px 20px;
 }
+
+/* ---- Respiro pre-estrazione ---- */
+#belline-breath {
+    animation: breathFade 0.4s ease-out;
+}
+
+.breath-rings {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin-top: 1rem;
+}
+
+.breath-rings span {
+    position: absolute;
+    inset: 0;
+    border: 2px solid rgba(212, 175, 55, 0.55);
+    border-radius: 50%;
+    animation: breathRing 3.2s ease-out infinite;
+}
+
+.breath-rings span:nth-child(2) { animation-delay: 0.5s; border-color: rgba(212, 175, 55, 0.35); }
+.breath-rings span:nth-child(3) { animation-delay: 1s; border-color: rgba(212, 175, 55, 0.2); }
+
+@keyframes breathFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes breathRing {
+    0% { transform: scale(0.35); opacity: 1; }
+    100% { transform: scale(1.15); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #belline-breath { animation: none; }
+    .breath-rings span { animation: none; transform: scale(1); opacity: 1; }
+}
+
+/* ---- Pannello riflessione prima del messaggio ---- */
+.advice-reflection-panel {
+    text-align: center;
+}
+
+.advice-reflection-hint {
+    color: var(--soft-cream);
+    opacity: 0.85;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 46ch;
+    margin: 0 auto 0.5rem;
+}
+
+.belline-reflection-input {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    display: block;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--accent-line);
+    border-radius: 14px;
+    padding: 12px 16px;
+    color: var(--soft-cream);
+    font-family: inherit;
+    font-size: 0.98rem;
+    line-height: 1.55;
+    resize: vertical;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.belline-reflection-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.belline-reflection-input::placeholder {
+    color: rgba(255, 253, 240, 0.4);
+}
+
+.mystical-button.is-ghost {
+    background: transparent;
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: var(--gold-light);
+}
+
+.mystical-button.is-ghost:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.08);
+}
+
+/* ---- Riflessione salvata nello storico ---- */
+.belline-history-reflection {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    font-style: italic;
+    opacity: 0.9;
+}
+
+/* ---- Link secondari nel footer ---- */
+.footer-links .nav-link {
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+.footer-links .nav-link:hover {
+    opacity: 1;
+}

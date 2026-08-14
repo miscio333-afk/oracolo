@@ -84,10 +84,13 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
   const [includeBlue, setIncludeBlue] = useState(false);
   const [cards, setCards] = useState<BellineCard[]>([]);
   const [revealed, setRevealed] = useState<number[]>([]);
+  const [isBreathing, setIsBreathing] = useState(false);
   const [birthDate, setBirthDate] = useState({ day: '', month: '', year: '' });
   const [question, setQuestion] = useState('');
   const [reading, setReading] = useState<RuleBasedReading | null>(null);
   const [aiParagraphs, setAiParagraphs] = useState<string[] | null>(null);
+  const [awaitingReflection, setAwaitingReflection] = useState(false);
+  const [reflection, setReflection] = useState('');
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isPreparingTTS, setIsPreparingTTS] = useState(false);
   const [ttsUri, setTtsUri] = useState<string | null>(null);
@@ -102,6 +105,7 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
   }, [audioPlayer]);
 
   function startReading() {
+    if (isBreathing) return;
     if (type === 'natal') {
       const day = Number(birthDate.day);
       const month = Number(birthDate.month);
@@ -115,11 +119,15 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
       void saveReading(type, [natal]);
       return;
     }
-    const next = drawBellineCards(count, includeBlue);
-    setCards(next);
-    setRevealed([]);
-    setReading(null);
-    setAiParagraphs(null);
+    setIsBreathing(true);
+    setTimeout(() => {
+      setIsBreathing(false);
+      const next = drawBellineCards(count, includeBlue);
+      setCards(next);
+      setRevealed([]);
+      setReading(null);
+      setAiParagraphs(null);
+    }, 1600);
   }
 
   function completeReading(drawnCards: BellineCard[]) {
@@ -129,9 +137,28 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
     setTtsError(null);
     audioPlayer.pause();
     stopSystemVoice();
+    if (type === 'natal') {
+      void saveReading(type ?? 'free', drawnCards);
+      if (!isAuthConfigured) return;
+      setIsGeneratingAI(true);
+      void generateMobileAIGeneralMessage(drawnCards, { question, type: type ?? 'free' })
+        .then((paragraphs) => setAiParagraphs(paragraphs))
+        .finally(() => setIsGeneratingAI(false));
+      return;
+    }
+    setAwaitingReflection(true);
+    setReflection('');
+  }
+
+  function resolveReflection(reflectionText: string) {
+    const text = reflectionText.trim();
+    setReflection(text);
+    setAwaitingReflection(false);
+    if (!cards.length) return;
+    void saveReading(type ?? 'free', cards, text || null);
     if (!isAuthConfigured) return;
     setIsGeneratingAI(true);
-    void generateMobileAIGeneralMessage(drawnCards, { question, type: type ?? 'free' })
+    void generateMobileAIGeneralMessage(cards, { question, type: type ?? 'free' }, text || undefined)
       .then((paragraphs) => setAiParagraphs(paragraphs))
       .finally(() => setIsGeneratingAI(false));
   }
@@ -168,7 +195,6 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
       const next = [...current, index];
       if (next.length === cards.length && cards.length > 0) {
         completeReading(cards);
-        void saveReading(type ?? 'free', cards);
       }
       return next;
     });
@@ -276,21 +302,55 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
           })}
         </View>
       )}
+      {isBreathing && (
+        <View style={styles.breathPanel}>
+          <Text style={styles.breathSymbol}>✦</Text>
+          <Text style={styles.breathTitle}>Respira</Text>
+          <Text style={styles.breathBody}>Inspira lentamente, trattieni un istante, poi lascia andare. Le Luci attendono il tuo respiro.</Text>
+        </View>
+      )}
       <MysticalButton onPress={startReading}>{cards.length ? 'Nuova consultazione' : 'Inizia la consultazione'}</MysticalButton>
       {cards.length > 0 && revealed.length < cards.length && <Text style={styles.hint}>Svela ogni Luce con un tocco.</Text>}
       {cards.length > 0 && revealed.length === cards.length && <Text style={styles.complete}>✦ Tutte le Luci sono state rivelate.</Text>}
-      {reading && <ReadingResult aiParagraphs={aiParagraphs} isGeneratingAI={isGeneratingAI} isPreparingTTS={isPreparingTTS} isPlaying={audioStatus.playing} onSpeak={handleSpeak} reading={reading} ttsError={ttsError} />}
+      {awaitingReflection && (
+        <View style={styles.reflectionPanel}>
+          <Text style={styles.reflectionEyebrow}>✦ UN ISTANTE DI ASCOLTO ✦</Text>
+          <Text style={styles.reflectionTitle}>Cosa ti suscita questa lettura?</Text>
+          <Text style={styles.reflectionHint}>
+            Prima di leggere il messaggio, fermati un momento. Scrivi ciò che senti: le tue parole si aggiungeranno alla lettura. Oppure salta e ascolta subito.
+          </Text>
+          <TextInput
+            accessibilityLabel="La tua riflessione sulla lettura"
+            maxLength={600}
+            multiline
+            onChangeText={setReflection}
+            placeholder="Le tue impressioni, le emozioni, ciò che queste luci ti richiamano…"
+            placeholderTextColor="#8F819F"
+            style={styles.reflectionInput}
+            value={reflection}
+          />
+          <MysticalButton onPress={() => resolveReflection(reflection)}>Scrivi e ascolta il messaggio</MysticalButton>
+          <MysticalButton onPress={() => resolveReflection('')} secondary>Salta e ascolta il messaggio</MysticalButton>
+        </View>
+      )}
+      {reading && !awaitingReflection && <ReadingResult aiParagraphs={aiParagraphs} isGeneratingAI={isGeneratingAI} isPreparingTTS={isPreparingTTS} isPlaying={audioStatus.playing} onSpeak={handleSpeak} reading={reading} reflection={reflection} ttsError={ttsError} />}
       <Text style={styles.note}>La sincronizzazione dello storico e il consumo crediti server-side verranno collegati nel prossimo incremento.</Text>
     </Screen>
   );
 }
 
-function ReadingResult({ reading, aiParagraphs, isGeneratingAI, isPreparingTTS, isPlaying, onSpeak, ttsError }: { reading: RuleBasedReading; aiParagraphs: string[] | null; isGeneratingAI: boolean; isPreparingTTS: boolean; isPlaying: boolean; onSpeak: () => void; ttsError: string | null }) {
+function ReadingResult({ reading, aiParagraphs, isGeneratingAI, isPreparingTTS, isPlaying, onSpeak, ttsError, reflection }: { reading: RuleBasedReading; aiParagraphs: string[] | null; isGeneratingAI: boolean; isPreparingTTS: boolean; isPlaying: boolean; onSpeak: () => void; ttsError: string | null; reflection: string }) {
   const paragraphs = aiParagraphs || reading.paragraphs;
   return (
     <View style={styles.readingResult}>
       <Text style={styles.readingEyebrow}>✦ IL MESSAGGIO DELLE LUCI</Text>
       <Text style={styles.readingTitle}>{aiParagraphs ? 'Il messaggio delle Luci' : 'La lettura prende forma'}</Text>
+      {reflection.trim() ? (
+        <View style={styles.derivedCard}>
+          <Text style={styles.derivedTitle}>La tua riflessione</Text>
+          <Text style={styles.derivedText}>«{reflection.trim()}»</Text>
+        </View>
+      ) : null}
       {isGeneratingAI && <Text style={styles.aiStatus}>Le Luci stanno componendo un messaggio più profondo…</Text>}
       {ttsError && <Text style={styles.ttsError}>{ttsError}</Text>}
       <MysticalButton onPress={onSpeak} secondary>{isPreparingTTS ? 'Preparazione voce…' : isPlaying ? 'Interrompi voce' : 'Ascolta il messaggio'}</MysticalButton>
@@ -380,4 +440,13 @@ const styles = StyleSheet.create({
   adviceCard: { backgroundColor: '#4B3044', borderRadius: 16, padding: 15, gap: 7 },
   adviceText: { color: '#FFF2C6', fontSize: 15, lineHeight: 22 },
   note: { color: '#8F819F', fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  breathPanel: { backgroundColor: '#25163B', borderRadius: 24, borderColor: '#80602A', borderWidth: 1, padding: 26, alignItems: 'center', gap: 10 },
+  breathSymbol: { color: '#F4C95D', fontSize: 40 },
+  breathTitle: { color: '#FFF9E8', fontFamily: 'Georgia', fontSize: 24 },
+  breathBody: { color: '#C9BDD4', fontSize: 14, lineHeight: 21, textAlign: 'center' },
+  reflectionPanel: { backgroundColor: '#25163B', borderRadius: 24, borderColor: '#B8860B', borderWidth: 1, padding: 20, gap: 12 },
+  reflectionEyebrow: { color: '#F4C95D', letterSpacing: 1.4, fontSize: 11, fontWeight: '700' },
+  reflectionTitle: { color: '#FFF9E8', fontFamily: 'Georgia', fontSize: 22 },
+  reflectionHint: { color: '#C9BDD4', fontSize: 14, lineHeight: 21 },
+  reflectionInput: { minHeight: 96, borderRadius: 16, borderWidth: 1, borderColor: '#6E4E38', color: '#FFF9E8', padding: 14, fontSize: 15, lineHeight: 21, textAlignVertical: 'top' },
 });

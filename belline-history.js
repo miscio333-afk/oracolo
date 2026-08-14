@@ -59,7 +59,8 @@
             count: cards.length,
             blue: window.bellineIncludeBlue ? window.bellineIncludeBlue() : false,
             cards: cards,
-            advice: ''
+            advice: '',
+            reflection: null
         };
         return true;
     }
@@ -104,6 +105,7 @@
         pending = null;
 
         entry.advice = readAdviceText() || entry.advice;
+        entry.reflection = (typeof window.bellineReflectionText !== 'undefined' && window.bellineReflectionText) || null;
 
         var list = load();
         list.unshift(entry);
@@ -180,6 +182,9 @@
                 '  <span class="belline-history-cards">' + escapeHtml(e.cards.join(' · ')) + '</span>' + blueBadge +
                 '</div>' +
                 q +
+                (e.reflection
+                    ? '<p class="belline-history-reflection">✎ «' + escapeHtml(e.reflection) + '»</p>'
+                    : '') +
                 (e.advice
                     ? '<button type="button" class="belline-history-toggle" data-i="' + i + '">Vedi il messaggio</button>' +
                       '<div class="belline-history-advice" hidden>' + '<p>' + escapeHtml(e.advice) + '</p></div>'
@@ -238,18 +243,16 @@
     var wrapped = false;
 
     function wrapStartReading() {
-        if (wrapped || typeof window.startBellineReading !== 'function') return;
+        if (wrapped) return;
         wrapped = true;
 
-        var orig = window.startBellineReading;
-
-        window.startBellineReading = function () {
-            var r = orig.apply(this, arguments);
+        // La lettura viene catturata quando le luci sono effettivamente estratte
+        // (l'estrazione ora avviene dopo la pausa di respiro, non subito alla chiamata).
+        document.addEventListener('belline:draw', function () {
             if (capturePending()) {
                 arm();
             }
-            return r;
-        };
+        });
     }
 
     // ---- Sync iniziale col backend (reconcile cache-first) ----

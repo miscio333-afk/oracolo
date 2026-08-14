@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <meta name="theme-color" content="#150D26">
+    <title>La Storia del Mazzo di Belline — L'Oracolo di Belline</title>
+    <meta name="description" content="Le origini documentate delle 52 Luci di Belline e della Carta Blu: il Mage Edmond, la riscoperta di Marcel Forget e le edizioni La Ducale e Grimaud.">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Quattrocento+Sans:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <!-- Tailwind CSS (compilato staticamente) -->
+    <link rel="stylesheet" href="resources/tailwind.css?v=1">
+
+    <!-- Design system condiviso -->
+    <link rel="stylesheet" href="styles.css?v=18">
+    <!-- Regole delle carte e della lettura -->
+    <link rel="stylesheet" href="belline.css?v=30">
+</head>
+<body>
+    <!-- Particle Background -->
+    <div class="particle-container" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="site-nav fixed top-0 w-full z-50">
+        <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div class="flex flex-wrap items-center gap-4">
+                <h1 class="nav-brand text-xl sm:text-2xl hidden min-[380px]:block">L'Oracolo di Belline</h1>
+                <div class="flex ml-auto space-x-3 sm:space-x-6 text-sm sm:text-base">
+                    <a href="index.html" class="nav-link whitespace-nowrap">Home</a>
+                    <a href="stesa.html" class="nav-link whitespace-nowrap">Stesa Belline</a>
+                    <a href="narrativa.html" class="nav-link whitespace-nowrap">Stesa Narrativa</a>
+                    <a href="natale.html" class="nav-link whitespace-nowrap nav-link--stack"><span>Carta Natale</span><span class="nav-free">FREE</span></a>
+                    <a href="storia.html" class="nav-link whitespace-nowrap" aria-current="page">La Storia</a>
+                    <a href="pricing.html" class="nav-link whitespace-nowrap">Upgrade</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-6">
+        <div class="container mx-auto max-w-5xl">
+
+            <!-- Header -->
+            <div class="text-center mb-14 fade-in">
+                <h1 class="mystical-title text-5xl md:text-6xl mb-6">La Storia del Mazzo di Belline</h1>
+                <p class="text-xl text-yellow-200 max-w-3xl mx-auto">
+                    Un omaggio alle 52 Luci che ti accompagnano: le loro origini documentate, dalla mano del Mage Edmond alla riscoperta di Belline.
+                </p>
+            </div>
+
+            <!-- Origine -->
+            <section class="reading-area p-6 sm:p-8 rounded-3xl mb-10 fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-6">Un mazzo nato a metà Ottocento</h2>
+                <p class="text-yellow-200/95 leading-relaxed mb-4">
+                    Le origini dell'oracolo sono attribuite al Mage Edmond, pseudonimo del francese
+                    <strong class="text-amber-300">Jules Charles Ernest Billaudot</strong> (1829–1881). Secondo la
+                    tradizione, i disegni delle carte videro la luce tra il 1845 e il 1865: un insieme di simboli
+                    pensato per la divinazione, ispirato al clima esoterico dell'epoca e alle corrispondenze
+                    astrali.
+                </p>
+                <p class="text-yellow-200/95 leading-relaxed mb-4">
+                    Dopo la morte del Mage Edmond nel 1881, il mazzo cadde nell'oblio per quasi un secolo,
+                    conservato tra le sue carte e i suoi manoscritti.
+                </p>
+            </section>
+
+            <!-- Riscoperta -->
+            <section class="reading-area p-6 sm:p-8 rounded-3xl mb-10 fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-6">La riscoperta di Marcel Forget</h2>
+                <p class="text-yellow-200/95 leading-relaxed mb-4">
+                    A riportare le carte alla luce fu il cartomante francese <strong class="text-amber-300">Marcel Forget</strong>
+                    (1924–1977), conosciuto con il nome d'arte di <strong class="text-amber-300">Belline</strong>.
+                    Secondo il racconto tramandato, ritrovò i prototipi originali tra gli effetti di una sua
+                    consultante, li rielaborò e diede loro un'interpretazione unitaria.
+                </p>
+                <p class="text-yellow-200/95 leading-relaxed mb-4">
+                    Le prime edizioni pubbliche risalgono al <strong class="text-amber-300">1960</strong> (casa
+                    editrice La Ducale) e al <strong class="text-amber-300">1961</strong> (Grimaud), e fu proprio
+                    la casa Grimaud a battezzare il mazzo con il nome del suo riscopritore. Da allora l'oracolo
+                    ha conosciuto decine di edizioni e una popolarità che dura ancora oggi.
+                </p>
+            </section>
+
+            <!-- Struttura -->
+            <section class="reading-area p-6 sm:p-8 rounded-3xl mb-10 fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-6">La struttura delle 52 Luci</h2>
+                <p class="text-yellow-200/95 leading-relaxed mb-4">
+                    L'oracolo è composto da <strong class="text-amber-300">52 carte</strong>, più una carta
+                    complementare, la <strong class="text-amber-300">Carta Blu</strong>. Le 52 sono ripartite in
+                    <strong class="text-amber-300">7 serie astrali</strong>, ciascuna governata da un corpo celeste
+                    della tradizione:
+                </p>
+                <ul class="space-y-2 text-yellow-200/95 mb-4">
+                    <li class="flex items-start gap-3"><span class="text-amber-300" aria-hidden="true">☉</span><span>Sole — 7 Luci</span></li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300" aria-hidden="true">☽</span><span>Luna — 7 Luci</span></li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300" aria-hidden="true">☿</span><span>Mercurio — 7 Luci</span></li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300" aria-hidden="true">♀</span><span>Venere — 7 Luci</span></li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300" aria-hidden="true">♂</span><span>Marte — 7 Luci</span></li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300" aria-hidden="true">♃</span><span>Giove — 7 Luci</span></li>
+                    <li class="flex items-start gap-3"><span class="text-amber-300" aria-hidden="true">♄</span><span>Saturno — 7 Luci</span></li>
+                </ul>
+                <p class="text-yellow-200/95 leading-relaxed mb-4">
+                    Le 49 carte legate alle serie astrali sono affiancate da poche Luci che non fanno capo ad alcun
+                    pianeta, come la Chiave, l'Uomo e la Donna: figure di passaggio che parlano di scelte e di
+                    incontri.
+                </p>
+            </section>
+
+            <!-- Carta Blu -->
+            <section class="reading-area p-6 sm:p-8 rounded-3xl mb-10 fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-6">La Carta Blu</h2>
+                <p class="text-yellow-200/95 leading-relaxed mb-4">
+                    La <strong class="text-amber-300">Carta Blu</strong> è la carta del consultante: una presenza
+                    benevola che avvolge la stesa, dissolve le ombre e richiama protezione e fiducia. Quando
+                    compare, ricorda che il filo di ogni lettura passa dalla persona che interroga le Luci.
+                </p>
+            </section>
+
+            <!-- Fonti -->
+            <section class="reading-area p-6 sm:p-8 rounded-3xl mb-10 fade-in">
+                <h2 class="mystical-title text-3xl text-center mb-6">Fonti</h2>
+                <p class="text-yellow-200/90 leading-relaxed text-sm">
+                    La ricostruzione si basa su fonti documentate sulla storia dell'oracolo di Belline: le
+                    cronache delle prime edizioni La Ducale (1960) e Grimaud (1961), gli studi sui prototipi del
+                    Mage Edmond (1845–1865) e i materiali di collezionismo sul mazzo. Le 52 carte rappresentate in
+                    questo sito ne sono una riproduzione in chiave Art Nouveau, ispirata alle carte tradizionali
+                    dell'oracolo.
+                </p>
+            </section>
+
+            <div class="text-center fade-in">
+                <a href="stesa.html" class="mystical-button px-8 py-4 rounded-full">Consulta le Luci</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer py-12 px-6 text-center">
+        <p class="footer-text">© 2026 L'Oracolo di Belline - Arte Divinatoria in Stile Art Nouveau</p>
+        <p class="footer-text footer-links mt-3">
+            <a href="storia.html" class="nav-link whitespace-nowrap">La Storia del Mazzo</a>
+        </p>
+    </footer>
+
+    <script src="config.local.js?v=4"></script>
+    <script src="config.deploy.js?v=1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+    <script src="belline-backend.js?v=4"></script>
+    <script src="belline.js?v=6"></script>
+    <script src="belline-common.js?v=30"></script>
+    <script src="belline-wallet.js?v=7"></script>
+    <script src="belline-account.js?v=3"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeBellineParticles();
+            initializeMagicCursorHalo();
+            if (typeof showBellineDisclaimerIfNeeded === 'function') showBellineDisclaimerIfNeeded();
+        });
+    </script>
+</body>
+</html>

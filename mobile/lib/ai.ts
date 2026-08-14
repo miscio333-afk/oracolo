@@ -7,19 +7,23 @@ function cardDescription(card: BellineCard, index: number) {
   return `${index + 1}. ${card.name} (${polarity}, serie ${card.series}).${icon} ${card.meaning}`;
 }
 
-export function buildMobileReadingPrompt(cards: BellineCard[], question: string, type: string) {
+export function buildMobileReadingPrompt(cards: BellineCard[], question: string, type: string, reflection?: string) {
   const focus = question.trim()
     ? `Il consultante ha posto questa domanda: «${question.trim()}».`
     : 'Il consultante non ha posto una domanda specifica: traccia un quadro generale.';
   const structure = type === 'narrative'
     ? 'Organizza la lettura come Passato, Presente e Futuro, rispettando l’ordine delle carte.'
     : 'Organizza la lettura partendo dal quadro generale e poi commenta ogni carta nell’ordine estratto.';
+  const reflectionLines = reflection && reflection.trim()
+    ? [`Prima di leggere il messaggio, il consultante ha scritto la sua riflessione spontanea: «${reflection.trim()}». Raccogline gli spunti con rispetto, senza contraddirli, e intrecciali alla lettura.`]
+    : [];
 
   return [
     'Sei un cartomante esperto dell’oracolo di Belline. Scrivi esclusivamente in italiano.',
     focus,
     structure,
-    'Usa esclusivamente le carte elencate. Non inventare arcani, semi o carte assenti.',
+    ...reflectionLines,
+    'Usa esclusivamente le carte elencate. Non inventare luci o carte assenti.',
     'Parti dall’iconografia, poi collega significato, domanda e consiglio concreto.',
     `Carte estratte (${cards.length}):`,
     cards.map(cardDescription).join('\n'),
@@ -27,9 +31,9 @@ export function buildMobileReadingPrompt(cards: BellineCard[], question: string,
   ].join('\n\n');
 }
 
-export async function generateMobileAIGeneralMessage(cards: BellineCard[], options: { question?: string; type: string }) {
+export async function generateMobileAIGeneralMessage(cards: BellineCard[], options: { question?: string; type: string }, reflection?: string) {
   if (!supabase || cards.length === 0) return null;
-  const prompt = buildMobileReadingPrompt(cards, options.question || '', options.type);
+  const prompt = buildMobileReadingPrompt(cards, options.question || '', options.type, reflection);
   const request = supabase.functions.invoke('belline-ai', {
     body: {
       prompt,

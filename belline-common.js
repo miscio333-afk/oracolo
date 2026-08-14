@@ -26,6 +26,8 @@ let bellineGeneratedQuestions = [];
 let bellineActiveAmbito = null;
 // Il messaggio generale si rivela solo a carte scoperte (giro dell'ultima)
 let bellineAdviceGate = false;
+// Riflessione scritta dal consultante prima di leggere il messaggio (opzionale)
+window.bellineReflectionText = null;
 
 // Tipo di stesa corrente, impostato dalla singola pagina: 'free' | 'narrative'
 let bellineMode = 'free';
@@ -433,7 +435,7 @@ function bellineResetShuffle() {
     bellineShuffleUI(false);
 }
 
-// Avvia la lettura di Belline: preflight della pagina, poi estrazione
+// Avvia la lettura di Belline: preflight della pagina, pausa di respiro, poi estrazione
 function startBellineReading() {
     const deckEl = document.getElementById('belline-deck');
     if (!deckEl) return;
@@ -445,6 +447,61 @@ function startBellineReading() {
         if (st) st.textContent = preflight;
         return;
     }
+
+    // Anti doppio-click: una lettura alla volta
+    if (bellineReadingBusy) return;
+    bellineReadingBusy = true;
+
+    const complete = () => {
+        bellineReadingBusy = false;
+        finishBellineReading();
+    };
+
+    // Respiro: pausa animata prima dell'estrazione (ridotta se motion ridotto)
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const breathMs = reduceMotion ? 400 : 2000;
+    bellineShowBreathOverlay();
+    setTimeout(complete, breathMs);
+}
+
+let bellineReadingBusy = false;
+
+// Overlay "Prendi un respiro…" prima dell'estrazione delle luci
+function bellineShowBreathOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'belline-breath';
+    overlay.className = 'fixed inset-0 z-[1100] bg-black bg-opacity-85 flex items-center justify-center p-4';
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.innerHTML = `
+        <div class="text-center max-w-md">
+            <p class="advice-kicker" aria-hidden="true">✦ L'Oracolo ti ascolta ✦</p>
+            <h2 class="card-name text-3xl sm:text-4xl mb-4">Prendi un respiro…</h2>
+            <div class="breath-rings mx-auto" aria-hidden="true"><span></span><span></span><span></span></div>
+            <p class="text-yellow-200/90 mt-6 text-lg">Concediti un istante di silenzio.<br>Quando sei pronto, le Luci si riveleranno.</p>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    if (typeof anime !== 'undefined') {
+        anime({
+            targets: overlay.firstElementChild,
+            scale: [0.92, 1],
+            opacity: [0, 1],
+            duration: 500,
+            easing: 'easeOutQuart'
+        });
+    }
+}
+
+function bellineHideBreathOverlay() {
+    const overlay = document.getElementById('belline-breath');
+    if (overlay) overlay.remove();
+}
+
+// Seconda parte della lettura: mescola, estrae e mostra le carte
+function finishBellineReading() {
+    const deckEl = document.getElementById('belline-deck');
+    bellineHideBreathOverlay();
+    if (!deckEl) return;
 
     // Usa il PRNG "caricato" dal rituale, se completato
     const prng = bellineShuffleSeeded ? bellineShuffleSeeded.prng : null;
@@ -474,6 +531,9 @@ function startBellineReading() {
     for (let i = 0; i < count && i < queue.length; i++) {
         bellineDrawn.push(queue[i]);
     }
+
+    // Notifica lo storico/altri moduli che le luci sono state estratte
+    document.dispatchEvent(new CustomEvent('belline:draw', { detail: { count } }));
 
     const status = document.getElementById('belline-status');
     if (status) status.textContent = 'Le luci si stanno rivelando...';
@@ -597,7 +657,48 @@ function bellineAllCardsRevealed() {
 function bellineTryRenderAdvice() {
     if (bellineAdviceGate || !bellineAllCardsRevealed()) return;
     bellineAdviceGate = true;
-    renderBellineAdvice();
+    bellineAskReflection();
+}
+
+// Chiede al consultante di fermarsi un istante prima di leggere il messaggio:
+// può scrivere ciò che la lettura gli suscita (opzionale) o saltare e ascoltare.
+// L'AI parte subito in background: il messaggio si svela solo dopo la scelta.
+function bellineAskReflection() {
+    const box = document.getElementById('belline-advice');
+    if (!box) { renderBellineAdvice(null); return; }
+
+    box.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'advice-paragraph-card advice-reflection-panel';
+    panel.innerHTML = `
+        <p class="advice-kicker" aria-hidden="true">✦ Un istante di ascolto ✦</p>
+        <h4 class="card-name text-xl mb-3">Cosa ti suscita questa lettura?</h4>
+        <p class="advice-reflection-hint">Prima di leggere il messaggio, fermati un momento. Scrivi ciò che senti: le tue parole si aggiungeranno alla lettura. Oppure salta e ascolta subito.</p>
+        <textarea id="belline-reflection" class="belline-reflection-input" rows="3" maxlength="600"
+            placeholder="Le tue impressioni, le emozioni, ciò che queste luci ti richiamano…" aria-label="La tua riflessione sulla lettura"></textarea>
+        <div class="flex flex-wrap gap-3 mt-5">
+            <button type="button" class="mystical-button px-5 py-2 rounded-full" id="belline-reflection-confirm">Scrivi e ascolta il messaggio</button>
+            <button type="button" class="mystical-button px-5 py-2 rounded-full is-ghost" id="belline-reflection-skip">Salta e ascolta il messaggio</button>
+        </div>`;
+    box.appendChild(panel);
+
+    const aiPromise = generateBellineAIGeneralMessage();
+
+    const finish = (text) => {
+        window.bellineReflectionText = text || null;
+        renderBellineAdvice(aiPromise);
+    };
+    const confirm = panel.querySelector('#belline-reflection-confirm');
+    const skip = panel.querySelector('#belline-reflection-skip');
+    const input = panel.querySelector('#belline-reflection');
+    confirm.addEventListener('click', () => finish(input.value.trim()));
+    skip.addEventListener('click', () => finish(null));
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            finish(input.value.trim());
+        }
+    });
 }
 
 // Renderizza le carte estratte
@@ -1645,7 +1746,7 @@ function renderBellineFollowUp() {
 }
 
 // Consiglio generale: sintesi di polarità e abbinamenti tra tutte le carte estratte
-async function renderBellineAdvice() {
+async function renderBellineAdvice(aiPromise) {
     const goods = bellineDrawn.filter(c => window.bellinePolarityOf(c) === 'good').length;
     const bads = bellineDrawn.filter(c => window.bellinePolarityOf(c) === 'bad').length;
     const neutrals = bellineDrawn.filter(c => window.bellinePolarityOf(c) === 'neutral').length;
@@ -1665,7 +1766,7 @@ async function renderBellineAdvice() {
         true
     );
 
-    const aiText = await generateBellineAIGeneralMessage();
+    const aiText = aiPromise ? await aiPromise : await generateBellineAIGeneralMessage();
     if (aiText) {
         renderBellineGeneralCards(splitBellineMessageToParagraphs(aiText));
         renderBellineDerivedCards();
@@ -1684,6 +1785,10 @@ async function renderBellineAdvice() {
         }
     } else if (question) {
         paragraphs.push(`Hai domandato: «${question}».`);
+    }
+
+    if (window.bellineReflectionText) {
+        paragraphs.push(`Hai affidato alle Luci la tua riflessione: «${window.bellineReflectionText}». Le tue parole risuonano in questa lettura.`);
     }
 
     // Narrativa per posizione: le carte raccontano il Ferradura, poi sintesi e coppie
@@ -2021,6 +2126,8 @@ function openNatalCardDetail(card) {
 // Nuova lettura: nasconde i risultati, rigenera il mazzo
 function newBellineReading() {
     bellineDrawn = [];
+    window.bellineReflectionText = null;
+    bellineHideBreathOverlay();
     stopBellineSpeech();
     setBellineSpeakEnabled(false);
     const followup = document.getElementById('belline-followup');
@@ -2200,10 +2307,49 @@ function calculateNatalCard() {
     renderNatalDetail(card, n);
 }
 
+// ---- Disclaimer "Questa app è una porta, non la risposta" ----
+// Informativo e una tantum: la conferma viene ricordata in localStorage.
+const BELLINE_DISCLAIMER_KEY = 'belline.disclaimer.v1';
+
+function showBellineDisclaimerIfNeeded() {
+    if (bellineDisclaimerAccepted()) return;
+    bellineShowDisclaimer();
+}
+
+function bellineDisclaimerAccepted() {
+    try { return localStorage.getItem(BELLINE_DISCLAIMER_KEY) === '1'; } catch (e) { return false; }
+}
+
+function bellineAcceptDisclaimer() {
+    try { localStorage.setItem(BELLINE_DISCLAIMER_KEY, '1'); } catch (e) { /* ignore */ }
+}
+
+function bellineShowDisclaimer() {
+    const overlay = document.createElement('div');
+    overlay.id = 'belline-disclaimer';
+    overlay.className = 'fixed inset-0 z-[1100] bg-black bg-opacity-90 flex items-center justify-center p-4';
+    overlay.innerHTML = `
+        <div class="bg-cream text-purple-900 max-w-xl w-full rounded-3xl border-4 border-yellow-600 p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
+            <h2 class="card-name text-2xl mb-3">Questa app è una porta, non la risposta.</h2>
+            <p class="text-purple-900/90 mb-4">Le Luci del mazzo di Belline ti accompagnano a guardare dentro di te, ma la risposta più vera resta sempre la tua. Niente di quanto leggi qui è destino scritto: è un invito a fermarti, riflettere e scegliere con consapevolezza.</p>
+            <p class="text-purple-900/90 mb-4">Ogni consultazione è proposta <strong>a solo scopo di intrattenimento e riflessione personale</strong>. Non sostituisce in alcun modo pareri medici, psicologici, legali o finanziari.</p>
+            <p class="text-purple-900/80 text-sm mb-4">Destinato a un pubblico adulto (18+). Se stai attraversando un momento difficile, rivolgiti con fiducia a un professionista.</p>
+            <button type="button" class="mystical-button px-6 py-3 rounded-full w-full" id="belline-disclaimer-accept">Ho compreso e proseguo</button>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    const accept = overlay.querySelector('#belline-disclaimer-accept');
+    accept.addEventListener('click', () => {
+        bellineAcceptDisclaimer();
+        overlay.remove();
+    });
+}
+
 // Export per il browser (chiamate dalle onclick/onchange)
 // NB: setBellineMode e calculateNatalCard sono esportati dalle pagine che li definiscono (natale/narrativa).
 window.startBellineReading = startBellineReading;
 window.initializeBellineParticles = initializeBellineParticles;
+window.showBellineDisclaimerIfNeeded = showBellineDisclaimerIfNeeded;
 window.initializeMagicCursorHalo = initializeMagicCursorHalo;
 window.flexResetBelline = flexResetBelline;
 window.openNatalCardDetail = openNatalCardDetail;

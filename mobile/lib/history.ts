@@ -8,6 +8,7 @@ export type HistoryEntry = {
   id: string;
   date: string;
   type: string;
+  reflection?: string | null;
   cards: Pick<BellineCard, 'id' | 'name' | 'series' | 'meaning' | 'polarity'>[];
 };
 
@@ -22,12 +23,13 @@ export async function loadHistory(): Promise<HistoryEntry[]> {
   }
 }
 
-export async function saveReading(type: string, cards: BellineCard[]) {
+export async function saveReading(type: string, cards: BellineCard[], reflection?: string | null) {
   const current = await loadHistory();
   const entry: HistoryEntry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     date: new Date().toISOString(),
     type,
+    reflection: reflection?.trim() || null,
     cards: cards.map(({ id, name, series, meaning, polarity }) => ({ id, name, series, meaning, polarity })),
   };
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([entry, ...current].slice(0, MAX_ENTRIES)));

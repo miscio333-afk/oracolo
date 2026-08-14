@@ -36,6 +36,7 @@ export default function HistoryScreen() {
               <Text style={styles.entryDate}>{new Date(item.date).toLocaleDateString('it-IT')}</Text>
               <Text style={styles.entryType}>{item.type === 'narrative' ? 'Passato · Presente · Futuro' : 'Stesa di Belline'}</Text>
               <Text style={styles.entryCards}>{item.cards.map((card) => card.name).join(' · ')}</Text>
+              {item.reflection ? <Text style={styles.entryReflection}>«{item.reflection}»</Text> : null}
             </View>
           )}
         />
@@ -68,4 +69,5 @@ const styles = StyleSheet.create({
   entryDate: { color: '#A99DBA', fontSize: 12 },
   entryType: { color: '#F4C95D', fontFamily: 'Georgia', fontSize: 20 },
   entryCards: { color: '#C9BDD4', fontSize: 14, lineHeight: 21 },
+  entryReflection: { color: '#E7D39A', fontSize: 13, lineHeight: 19, fontStyle: 'italic', marginTop: 2 },
 });
