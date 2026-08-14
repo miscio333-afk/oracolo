@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../lib/auth';
-import { DisclaimerModal } from '../components/DisclaimerModal';
+import { IntroGateway } from '../components/IntroGateway';
 
 export default function RootLayout() {
   return (
@@ -20,7 +20,7 @@ export default function RootLayout() {
         <Stack.Screen name="plans" options={{ title: 'I Piani del Cammino' }} />
         <Stack.Screen name="reading/[type]" options={{ title: 'Consulta le Luci' }} />
       </Stack>
-      <DisclaimerModal />
+      <IntroGateway />
     </AuthProvider>
   );
 }

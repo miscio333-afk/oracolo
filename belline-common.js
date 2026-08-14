@@ -2364,42 +2364,60 @@ function calculateNatalCard() {
     renderNatalDetail(card, n);
 }
 
-// ---- Disclaimer "Questa app è una porta, non la risposta" ----
-// Informativo e una tantum: la conferma viene ricordata in localStorage.
-const BELLINE_DISCLAIMER_KEY = 'belline.disclaimer.v1';
+// ---- Gateway di ingresso "Questa app è una porta, non la risposta" ----
+// Mostrato a ogni caricamento della home: SVG animato (~5s), disclaimer e click per entrare.
+const BELLINE_GATEWAY_MS = 5000;
 
-function showBellineDisclaimerIfNeeded() {
-    if (bellineDisclaimerAccepted()) return;
-    bellineShowDisclaimer();
+function bellineReducedMotion() {
+    try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
 }
 
-function bellineDisclaimerAccepted() {
-    try { return localStorage.getItem(BELLINE_DISCLAIMER_KEY) === '1'; } catch (e) { return false; }
-}
+function showBellineIntroGateway() {
+    const reduceMotion = bellineReducedMotion();
 
-function bellineAcceptDisclaimer() {
-    try { localStorage.setItem(BELLINE_DISCLAIMER_KEY, '1'); } catch (e) { /* ignore */ }
-}
-
-function bellineShowDisclaimer() {
     const overlay = document.createElement('div');
-    overlay.id = 'belline-disclaimer';
-    overlay.className = 'fixed inset-0 z-[1100] bg-black bg-opacity-90 flex items-center justify-center p-4';
+    overlay.id = 'belline-gateway';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Benvenuto nell\'Oracolo di Belline');
+    overlay.className = 'belline-gateway';
     overlay.innerHTML = `
-        <div class="bg-cream text-purple-900 max-w-xl w-full rounded-3xl border-4 border-yellow-600 p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
+        <div class="belline-gateway__visual" aria-hidden="true">
+            <img src="resources/intro/intro.svg" alt="" class="belline-gateway__svg">
+        </div>
+        <div class="belline-gateway__card">
             <h2 class="card-name text-2xl mb-3">Questa app è una porta, non la risposta.</h2>
-            <p class="text-purple-900/90 mb-4">Le Luci del mazzo di Belline ti accompagnano a guardare dentro di te, ma la risposta più vera resta sempre la tua. Niente di quanto leggi qui è destino scritto: è un invito a fermarti, riflettere e scegliere con consapevolezza.</p>
-            <p class="text-purple-900/90 mb-4">Ogni consultazione è proposta <strong>a solo scopo di intrattenimento e riflessione personale</strong>. Non sostituisce in alcun modo pareri medici, psicologici, legali o finanziari.</p>
-            <p class="text-purple-900/80 text-sm mb-4">Destinato a un pubblico adulto (18+). Se stai attraversando un momento difficile, rivolgiti con fiducia a un professionista.</p>
-            <button type="button" class="mystical-button px-6 py-3 rounded-full w-full" id="belline-disclaimer-accept">Ho compreso e proseguo</button>
+            <p class="mb-4">Le Luci del mazzo di Belline ti accompagnano a guardare dentro di te, ma la risposta più vera resta sempre la tua. Niente di quanto leggi qui è destino scritto: è un invito a fermarti, riflettere e scegliere con consapevolezza.</p>
+            <p class="mb-4">Ogni consultazione è proposta <strong>a solo scopo di intrattenimento e riflessione personale</strong>. Non sostituisce in alcun modo pareri medici, psicologici, legali o finanziari.</p>
+            <p class="belline-gateway__muted">Destinato a un pubblico adulto (18+). Se stai attraversando un momento difficile, rivolgiti con fiducia a un professionista.</p>
+            <button type="button" class="mystical-button px-6 py-3 rounded-full w-full belline-gateway__enter" id="belline-gateway-enter" disabled>Entra</button>
         </div>`;
     document.body.appendChild(overlay);
 
-    const accept = overlay.querySelector('#belline-disclaimer-accept');
-    accept.addEventListener('click', () => {
-        bellineAcceptDisclaimer();
-        overlay.remove();
-    });
+    const enter = overlay.querySelector('#belline-gateway-enter');
+
+    function unlock() {
+        if (!enter.disabled) return;
+        enter.disabled = false;
+        enter.classList.add('is-ready');
+        enter.setAttribute('aria-disabled', 'false');
+    }
+
+    function dismiss() {
+        overlay.classList.add('is-leaving');
+        setTimeout(() => { overlay.remove(); }, 450);
+        document.body.classList.remove('belline-gateway-lock');
+    }
+
+    enter.addEventListener('click', dismiss);
+
+    if (reduceMotion) {
+        unlock();
+    } else {
+        setTimeout(unlock, BELLINE_GATEWAY_MS);
+    }
+
+    document.body.classList.add('belline-gateway-lock');
 }
 
 // ---- Intro spirituale alla prima tiratura ----
@@ -2438,7 +2456,7 @@ function bellineShowIntro(onDone) {
 // NB: setBellineMode e calculateNatalCard sono esportati dalle pagine che li definiscono (natale/narrativa).
 window.startBellineReading = startBellineReading;
 window.initializeBellineParticles = initializeBellineParticles;
-window.showBellineDisclaimerIfNeeded = showBellineDisclaimerIfNeeded;
+window.showBellineIntroGateway = showBellineIntroGateway;
 window.initializeMagicCursorHalo = initializeMagicCursorHalo;
 window.flexResetBelline = flexResetBelline;
 window.openNatalCardDetail = openNatalCardDetail;
