@@ -1,11 +1,11 @@
 import { Link } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MysticalButton } from './MysticalButton';
 import { Screen } from './Screen';
 import { bellineAdvice, bellineNatalCard, bellinePolarityLabel, bellineSeriesName, drawBellineCards, getBellineCardById, type BellineCard } from '../lib/belline';
-import { saveReading } from '../lib/history';
+import { completeReadingEntry, saveReading, updateReadingEntry } from '../lib/history';
 import { buildRuleBasedReading, type RuleBasedReading } from '../lib/reading';
 import { generateMobileAIGeneralMessage } from '../lib/ai';
 import { useAuth } from '../lib/auth';
@@ -101,6 +101,7 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
   const [isPreparingTTS, setIsPreparingTTS] = useState(false);
   const [ttsUri, setTtsUri] = useState<string | null>(null);
   const [ttsError, setTtsError] = useState<string | null>(null);
+  const currentEntryId = useRef<string | null>(null);
 
   useEffect(() => {
     void AsyncStorage.getItem(INTRO_STORAGE_KEY).then((value) => {
@@ -136,7 +137,6 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
       setCards([natal]);
       setRevealed([0]);
       completeReading([natal]);
-      void saveReading(type, [natal]);
       return;
     }
     setIsBreathing(true);
@@ -157,6 +157,16 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
     beginReading();
   }
 
+  function applyAiMessage(drawnCards: BellineCard[], paragraphs: string[] | null) {
+    if (currentEntryId.current) {
+      const advice = paragraphs && paragraphs.length
+        ? paragraphs.join('\n')
+        : buildRuleBasedReading(drawnCards, { question }).paragraphs.join('\n');
+      void completeReadingEntry(currentEntryId.current, advice);
+    }
+    if (paragraphs) setAiParagraphs(paragraphs);
+  }
+
   function completeReading(drawnCards: BellineCard[]) {
     setReading(buildRuleBasedReading(drawnCards, { question }));
     setAiParagraphs(null);
@@ -165,16 +175,23 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
     audioPlayer.pause();
     stopSystemVoice();
     if (type === 'natal') {
-      void saveReading(type ?? 'free', drawnCards);
-      if (!isAuthConfigured) return;
-      setIsGeneratingAI(true);
-      void generateMobileAIGeneralMessage(drawnCards, { question, type: type ?? 'free' })
-        .then((paragraphs) => setAiParagraphs(paragraphs))
-        .finally(() => setIsGeneratingAI(false));
+      void saveReading(type ?? 'free', drawnCards, null, question).then((id) => {
+        currentEntryId.current = id;
+        if (!isAuthConfigured) return;
+        setIsGeneratingAI(true);
+        void generateMobileAIGeneralMessage(drawnCards, { question, type: type ?? 'free' })
+          .then((paragraphs) => applyAiMessage(drawnCards, paragraphs))
+          .finally(() => setIsGeneratingAI(false));
+      });
       return;
     }
     setAwaitingReflection(true);
     setReflection('');
+    if (type !== 'natal') {
+      void saveReading(type ?? 'free', drawnCards, null, question).then((id) => {
+        currentEntryId.current = id;
+      });
+    }
   }
 
   function resolveReflection(reflectionText: string) {
@@ -182,11 +199,13 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
     setReflection(text);
     setAwaitingReflection(false);
     if (!cards.length) return;
-    void saveReading(type ?? 'free', cards, text || null);
+    if (currentEntryId.current) {
+      void updateReadingEntry(currentEntryId.current, { reflection: text || null });
+    }
     if (!isAuthConfigured) return;
     setIsGeneratingAI(true);
     void generateMobileAIGeneralMessage(cards, { question, type: type ?? 'free' }, text || undefined)
-      .then((paragraphs) => setAiParagraphs(paragraphs))
+      .then((paragraphs) => applyAiMessage(cards, paragraphs))
       .finally(() => setIsGeneratingAI(false));
   }
 

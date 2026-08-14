@@ -76,7 +76,9 @@
             return readyPromise;
         }
         readyPromise = ensureSession().then(function (u) {
-            return !!u;
+            var ok = !!u;
+            if (ok) flushPending();
+            return ok;
         });
         return readyPromise;
     }
@@ -165,6 +167,7 @@
         var sub = client.auth.onAuthStateChange(function (event, session) {
             var u = (session && session.user) ? session.user : null;
             sessionUser = u;
+            if (u) flushPending();
             if (authStateCallback) authStateCallback({
                 event: event,
                 user: u,
@@ -236,24 +239,122 @@
             .catch(function (e) { lastError = e; return false; });
     }
 
-    // ---- Storico letture ----
+    // ---- Storico letture (Database Esperienziale) ----
 
+    // Genera un id (uuid v4) lato client, così l'aggiornamento drawn→complete
+    // punta alla stessa riga senza duplicati.
+    function clientUuid() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0;
+            var v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    // Coda fire-and-forget: se Supabase non è pronto o offline, le letture vengono
+    // accodate in localStorage e inviate al prossimo flush (ready/auth-change).
+    var PENDING_KEY = 'belline.pendingReadings.v1';
+
+    function loadPending() {
+        try {
+            var raw = localStorage.getItem(PENDING_KEY);
+            var arr = raw ? JSON.parse(raw) : [];
+            return Array.isArray(arr) ? arr : [];
+        } catch (e) { return []; }
+    }
+
+    function savePending(list) {
+        try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+    }
+
+    function enqueue(op) {
+        var q = loadPending();
+        q.push(op);
+        savePending(q);
+    }
+
+    // Una passata di flush: invia le operazioni accodate finché possibile,
+    // tiene quelle fallite. Ritorna true se la coda è vuota.
+    function flushPending() {
+        var q = loadPending();
+        if (!q.length || !isAvailable()) return Promise.resolve(true);
+        var kept = [];
+        var chain = Promise.resolve();
+        q.forEach(function (op) {
+            chain = chain.then(function () {
+                if (!isAvailable()) { kept.push(op); return; }
+                return sendReadingOp(op).then(function (ok) { if (!ok) kept.push(op); });
+            });
+        });
+        return chain.then(function () {
+            savePending(kept);
+            return kept.length === 0;
+        });
+    }
+
+    function sendReadingOp(op) {
+        if (op.kind === 'insert') {
+            op.payload = op.payload || {};
+            if (sessionUser && sessionUser.id) op.payload.user_id = sessionUser.id;
+        }
+        var p = (op.kind === 'update')
+            ? client.from('readings').update(op.payload).eq('id', op.id)
+            : client.from('readings').upsert(op.payload, { onConflict: 'id' });
+        return p.then(function (r) { return !(r && r.error); })
+            .catch(function (e) { lastError = e; return false; });
+    }
+
+    // Registra una stesa. Se entry.status === 'complete' viene salvata completa;
+    // altrimenti come 'drawn' (estratta ma non ancora letta).
     function addReading(entry) {
-        if (!isAvailable()) return Promise.resolve(false);
+        if (!entry) return Promise.resolve(false);
+        var id = entry.id || clientUuid();
         var payload = {
-            user_id: sessionUser.id,
+            id: id,
+            user_id: sessionUser ? sessionUser.id : null,
             created_at: entry.date,
             question: entry.question || null,
             count: entry.count,
             blue: !!entry.blue,
             cards: Array.isArray(entry.cards) ? entry.cards : [],
-            advice: entry.advice || ''
+            advice: entry.advice || '',
+            reflection: entry.reflection || null,
+            ambito: entry.ambito || null,
+            type: entry.type || null,
+            status: (entry.status === 'complete') ? 'complete' : 'drawn'
         };
-        if (entry.id) payload.id = entry.id;
-        return client.from('readings')
-            .insert(payload)
-            .then(function (r) { return !(r && r.error); })
-            .catch(function (e) { lastError = e; return false; });
+        if (!isAvailable()) {
+            enqueue({ kind: 'insert', id: id, payload: payload });
+            return Promise.resolve(true);
+        }
+        payload.user_id = sessionUser.id;
+        return sendReadingOp({ kind: 'insert', id: id, payload: payload })
+            .then(function (ok) {
+                if (!ok) enqueue({ kind: 'insert', id: id, payload: payload });
+                return ok;
+            });
+    }
+
+    // Aggiorna una stesa già registrata (drawn → complete) con messaggio e riflessione.
+    function updateReading(id, fields) {
+        if (!id) return Promise.resolve(false);
+        var payload = {
+            advice: (fields && fields.advice) || '',
+            reflection: (fields && fields.reflection) || null,
+            status: 'complete'
+        };
+        if (!isAvailable()) {
+            enqueue({ kind: 'update', id: id, payload: payload });
+            return Promise.resolve(true);
+        }
+        return sendReadingOp({ kind: 'update', id: id, payload: payload })
+            .then(function (ok) {
+                if (!ok) enqueue({ kind: 'update', id: id, payload: payload });
+                return ok;
+            });
     }
 
     // Ultime N letture dal server (per reconcile all'avvio).
@@ -261,7 +362,7 @@
         if (!isAvailable()) return Promise.resolve([]);
         var n = (limit && limit > 0) ? limit : 10;
         return client.from('readings')
-            .select('id, created_at, question, count, blue, cards, advice')
+            .select('id, created_at, question, count, blue, cards, advice, reflection, ambito, type, status')
             .eq('user_id', sessionUser.id)
             .order('created_at', { ascending: false })
             .limit(n)
@@ -276,7 +377,11 @@
                         count: row.count,
                         blue: row.blue,
                         cards: row.cards || [],
-                        advice: row.advice || ''
+                        advice: row.advice || '',
+                        reflection: row.reflection || null,
+                        ambito: row.ambito || null,
+                        type: row.type || null,
+                        status: row.status || 'drawn'
                     };
                 });
             })
@@ -327,6 +432,9 @@
         fetchPlan: fetchPlan,
         setPlan: setPlan,
         addReading: addReading,
+        updateReading: updateReading,
+        flushPending: flushPending,
+        clientUuid: clientUuid,
         fetchReadings: fetchReadings,
         deleteReading: deleteReading,
         callFunction: callFunction,

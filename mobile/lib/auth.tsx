@@ -2,6 +2,7 @@ import * as Linking from 'expo-linking';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
+import { flushPendingReadings } from './history';
 
 type AuthContextValue = {
   session: Session | null;
@@ -71,6 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authListener.data.subscription.unsubscribe();
     };
   }, []);
+
+  // Database Esperienziale: appena una sessione è disponibile, invia le letture
+  // accodate mentre Supabase non era pronto.
+  useEffect(() => {
+    if (session) void flushPendingReadings();
+  }, [session]);
 
   const value = useMemo<AuthContextValue>(() => ({
     session,

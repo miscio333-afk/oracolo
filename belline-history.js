@@ -41,6 +41,16 @@
 
     // Cattura la lettura appena estratta. Ritorna true solo se le carte sono
     // cambiate rispetto alla lettura già in corso (evita doppioni a pari numero di carte).
+    function newEntryId() {
+        if (window.bellineServer && window.bellineServer.clientUuid) return window.bellineServer.clientUuid();
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0;
+            var v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     function capturePending() {
         var cards = [];
         if (typeof bellineDrawn !== 'undefined' && bellineDrawn) {
@@ -54,15 +64,25 @@
         var qEl = document.getElementById('belline-question');
         var question = qEl ? (qEl.value || '').trim() : '';
         pending = {
+            id: newEntryId(),
             date: new Date().toISOString(),
             question: question || null,
             count: cards.length,
             blue: window.bellineIncludeBlue ? window.bellineIncludeBlue() : false,
             cards: cards,
             advice: '',
-            reflection: null
+            reflection: null,
+            ambito: (typeof window.bellineQuestionAmbito !== 'undefined' && window.bellineQuestionAmbito) || null,
+            type: stesaType()
         };
         return true;
+    }
+
+    function stesaType() {
+        var body = document.body;
+        if (body && body.dataset && body.dataset.stesaType) return body.dataset.stesaType;
+        if (body && body.getAttribute && body.getAttribute('data-stesa-type')) return body.getAttribute('data-stesa-type');
+        return null;
     }
 
     function readAdviceText() {
@@ -117,7 +137,13 @@
         saveAll(list.slice(0, maxEntries()));
         render();
 
-        if (window.bellineServer && window.bellineServer.addReading) {
+        // Database Esperienziale: aggiorna la stesa già registrata a 'complete'.
+        if (window.bellineServer && window.bellineServer.updateReading) {
+            window.bellineServer.updateReading(entry.id, {
+                advice: entry.advice,
+                reflection: entry.reflection
+            });
+        } else if (window.bellineServer && window.bellineServer.addReading) {
             window.bellineServer.addReading(entry);
         }
     }
@@ -251,7 +277,28 @@
         document.addEventListener('belline:draw', function () {
             if (capturePending()) {
                 arm();
+                // Database Esperienziale: registra SUBITO la stesa come 'drawn',
+                // anche se l'utente non completerà la lettura.
+                pushPendingReading();
             }
+        });
+    }
+
+    // Fire-and-forget verso Supabase: la stesa appena estratta viene registrata
+    // come 'drawn'. Verrà aggiornata a 'complete' in finalizeAndSave (stesso id).
+    function pushPendingReading() {
+        if (!pending || !window.bellineServer || !window.bellineServer.addReading) return;
+        window.bellineServer.addReading({
+            id: pending.id,
+            date: pending.date,
+            question: pending.question,
+            count: pending.count,
+            blue: pending.blue,
+            cards: pending.cards,
+            advice: '',
+            reflection: pending.reflection,
+            ambito: pending.ambito,
+            type: pending.type
         });
     }
 
