@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="resources/tailwind.css?v=2">
 
     <!-- Design system condiviso -->
-    <link rel="stylesheet" href="styles.css?v=19">
+    <link rel="stylesheet" href="styles.css?v=20">
     <!-- Regole delle carte e della lettura -->
     <link rel="stylesheet" href="belline.css?v=30">
 </head>
@@ -30,7 +30,10 @@
     <nav class="site-nav fixed top-0 w-full z-50">
         <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div class="flex flex-wrap items-center gap-4">
-                <h1 class="nav-brand text-xl sm:text-2xl hidden min-[380px]:block">L'Oracolo di Belline</h1>
+                <div class="nav-brand-wrap">
+                    <img src="resources/intro/intro-logo.svg" alt="" class="nav-brand-logo" aria-hidden="true">
+                    <h1 class="nav-brand text-xl sm:text-2xl">L'Oracolo di Belline</h1>
+                </div>
                 <div class="flex ml-auto space-x-3 sm:space-x-6 text-sm sm:text-base">
                     <a href="index.html" class="nav-link whitespace-nowrap">Home</a>
                     <a href="stesa.html" class="nav-link whitespace-nowrap">Stesa Belline</a>

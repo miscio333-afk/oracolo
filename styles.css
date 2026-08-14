@@ -321,6 +321,40 @@ button, a, input, select {
     color: transparent;
 }
 
+.nav-brand-wrap {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    line-height: 1;
+}
+
+@media (min-width: 380px) {
+    .nav-brand-wrap {
+        display: flex;
+    }
+}
+
+.nav-brand-logo {
+    width: 32px;
+    height: 32px;
+    flex: none;
+    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.35));
+    pointer-events: none;
+}
+
+@media (min-width: 640px) {
+    .nav-brand-logo {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-brand-logo {
+        filter: none;
+    }
+}
+
 /* ---- Pannelli vetro profondi ---- */
 .reading-area,
 .reading-container,
