@@ -22,6 +22,7 @@ export default function TabLayout() {
       <Tabs.Screen name="narrativa" options={{ title: 'Narrativa' }} />
       <Tabs.Screen name="natale" options={{ title: 'Natale' }} />
       <Tabs.Screen name="upgrade" options={{ title: 'Upgrade' }} />
+      <Tabs.Screen name="storia" options={{ title: 'Storia' }} />
       <Tabs.Screen name="consulta" options={{ href: null }} />
       <Tabs.Screen name="storico" options={{ href: null }} />
       <Tabs.Screen name="profilo" options={{ href: null }} />
