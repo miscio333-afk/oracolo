@@ -2381,17 +2381,225 @@ function showBellineIntroGateway() {
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', 'Benvenuto nell\'Oracolo di Belline');
     overlay.className = 'belline-gateway';
+
+    const title = 'Questa app è una porta, non la risposta.';
+    const para1 = 'Le Luci del mazzo di Belline ti accompagnano a guardare dentro di te, ma la risposta più vera resta sempre la tua. Niente di quanto leggi qui è destino scritto: è un invito a fermarti, riflettere e scegliere con consapevolezza.';
+    const para2 = 'Ogni consultazione è proposta a solo scopo di intrattenimento e riflessione personale. Non sostituisce in alcun modo pareri medici, psicologici, legali o finanziari.';
+    const muted = 'Destinato a un pubblico adulto (18+). Se stai attraversando un momento difficile, rivolgiti con fiducia a un professionista.';
+
+    // ---- Layout adattivo in pixel CSS, poi mappato in unità SVG (nessun taglio) ----
+    const vw = Math.max(320, window.innerWidth || 1280);
+    const vh = Math.max(480, window.innerHeight || 800);
+    const VW = 1440;
+    const VH = Math.round(VW * vh / vw);
+    const u = VW / vw; // unità SVG per pixel CSS
+    const px = (v) => Math.round(v * u);
+    const cx = VW / 2;
+
+    const availW = 0.86 * vw;
+    const wrapPx = (text, fontPx) => {
+        const max = Math.max(6, Math.floor(availW / (fontPx * 0.55)));
+        const words = text.split(' ');
+        const lines = [];
+        let cur = '';
+        for (const w of words) {
+            const cand = cur ? cur + ' ' + w : w;
+            if (cand.length <= max) { cur = cand; }
+            else { if (cur) lines.push(cur); cur = w; }
+        }
+        if (cur) lines.push(cur);
+        return lines;
+    };
+    const lineHPx = (f) => f * 1.35;
+
+    let titleFpx = Math.min(30, Math.max(19, vw * 0.024));
+    let bodyFpx = Math.min(17, Math.max(13, vw * 0.014));
+    let mutedFpx = Math.min(14, Math.max(11, vw * 0.012));
+
+    const layoutPx = () => {
+        const tL = wrapPx(title, titleFpx);
+        const p1L = wrapPx(para1, bodyFpx);
+        const p2L = wrapPx(para2, bodyFpx);
+        const mL = wrapPx(muted, mutedFpx);
+        const total = tL.length * lineHPx(titleFpx)
+            + bodyFpx * 2
+            + p1L.length * lineHPx(bodyFpx)
+            + bodyFpx * 1.5
+            + p2L.length * lineHPx(bodyFpx)
+            + mutedFpx * 1.5
+            + mL.length * lineHPx(mutedFpx);
+        return { tL, p1L, p2L, mL, total };
+    };
+
+    // Stella in alto: raggio compatto, sempre con spazio sotto per il testo
+    let starRpx = Math.min(0.13 * vh, 0.16 * vw, 150);
+    let starCyPx = Math.max(0.10 * vh + starRpx, 0.16 * vh);
+
+    // Zona disponibile sotto la stella fino alla fascia del bottone
+    const btnBottomPx = Math.min(60, Math.max(28, 0.07 * vh));
+    const limitBottomPx = vh - btnBottomPx - 58;
+
+    let layout = layoutPx();
+    const availHeight = limitBottomPx - (starCyPx + starRpx) - titleFpx;
+    if (availHeight < layout.total) {
+        const k = Math.max(0.62, availHeight / layout.total);
+        titleFpx = Math.max(13, Math.round(titleFpx * k));
+        bodyFpx = Math.max(11, Math.round(bodyFpx * k));
+        mutedFpx = Math.max(10, Math.round(mutedFpx * k));
+        layout = layoutPx();
+    }
+
+    // Posizioni verticali (px) → unità SVG
+    const starR = px(starRpx);
+    const innerR = Math.round(starR * 0.62);
+    const cy = px(starCyPx);
+    const titleF = px(titleFpx);
+    const bodyF = px(bodyFpx);
+    const mutedF = px(mutedFpx);
+    const lineU = (f) => Math.round(f * 1.35);
+
+    let y = Math.round(px(starCyPx + starRpx + titleFpx * 0.9));
+    const titleY = y;
+    y += Math.round(px(layout.tL.length * lineHPx(titleFpx) + bodyFpx * 2));
+    const p1Y = y;
+    y += Math.round(px(layout.p1L.length * lineHPx(bodyFpx) + bodyFpx * 1.5));
+    const p2Y = y;
+    y += Math.round(px(layout.p2L.length * lineHPx(bodyFpx) + mutedFpx * 1.5));
+    const mutedY = y;
+
+    function starPath() {
+        let d = '';
+        for (let k = 0; k < 16; k++) {
+            const ang = (22.5 + k * 45) * Math.PI / 180;
+            const rad = (k % 2 === 0) ? starR : innerR;
+            const x = cx + rad * Math.sin(ang);
+            const y = cy - rad * Math.cos(ang);
+            d += (k === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+        }
+        return d + 'Z';
+    }
+
+    const starD = starPath();
+    const dashLen = Math.round(Math.PI * 2 * ((starR + innerR) / 2) * 2);
+
+    // Titolo: lettera per lettera (o testo pieno con reduced-motion)
+    let titleMarkup;
+    if (reduceMotion) {
+        titleMarkup = layout.tL.map((l, i) => `<tspan x="${cx}" dy="${i === 0 ? 0 : lineU(titleF)}">${l}</tspan>`).join('');
+    } else {
+        let li = 0;
+        titleMarkup = layout.tL.map((l, i) =>
+            `<tspan x="${cx}" dy="${i === 0 ? 0 : lineU(titleF)}">` +
+            l.split('').map((ch) =>
+                `<tspan class="gateway-letter" style="animation-delay:${(2600 + li++ * 40)}ms"${ch === ' ' ? ' xml:space="preserve"' : ''}>${ch}</tspan>`
+            ).join('') + '</tspan>'
+        ).join('');
+    }
+
+    const paraMarkup = (lines, font) => {
+        const dy = lineU(font);
+        return lines.map((l, i) => `<tspan x="${cx}" dy="${i === 0 ? 0 : dy}">${l}</tspan>`).join('');
+    };
+
+    const ring1 = Math.round(starR * 1.15);
+    const ring2 = Math.round(starR * 1.45);
+
     overlay.innerHTML = `
-        <div class="belline-gateway__visual" aria-hidden="true">
-            <img src="resources/intro/intro.svg" alt="" class="belline-gateway__svg">
-        </div>
-        <div class="belline-gateway__card">
-            <h2 class="card-name text-2xl mb-3">Questa app è una porta, non la risposta.</h2>
-            <p class="mb-4">Le Luci del mazzo di Belline ti accompagnano a guardare dentro di te, ma la risposta più vera resta sempre la tua. Niente di quanto leggi qui è destino scritto: è un invito a fermarti, riflettere e scegliere con consapevolezza.</p>
-            <p class="mb-4">Ogni consultazione è proposta <strong>a solo scopo di intrattenimento e riflessione personale</strong>. Non sostituisce in alcun modo pareri medici, psicologici, legali o finanziari.</p>
-            <p class="belline-gateway__muted">Destinato a un pubblico adulto (18+). Se stai attraversando un momento difficile, rivolgiti con fiducia a un professionista.</p>
-            <button type="button" class="mystical-button px-6 py-3 rounded-full w-full belline-gateway__enter" id="belline-gateway-enter" disabled>Entra</button>
-        </div>`;
+        <svg class="belline-gateway__svg" viewBox="0 0 ${VW} ${VH}" preserveAspectRatio="xMidYMid meet"
+             xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+            <defs>
+                <radialGradient id="gw-bg" cx="50%" cy="42%" r="75%">
+                    <stop offset="0%" stop-color="#2D1B45"/>
+                    <stop offset="100%" stop-color="#0E0819"/>
+                </radialGradient>
+                <linearGradient id="gw-gold" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#F5F5DC"/>
+                    <stop offset="50%" stop-color="#B8860B"/>
+                    <stop offset="100%" stop-color="#FFBF00"/>
+                </linearGradient>
+                <linearGradient id="gw-goldfaint" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#FFBF00" stop-opacity="0.15"/>
+                    <stop offset="100%" stop-color="#B8860B" stop-opacity="0.05"/>
+                </linearGradient>
+                <filter id="gw-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="6" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+            </defs>
+
+            <rect width="${VW}" height="${VH}" fill="url(#gw-bg)"/>
+
+            <!-- Raggi celesti rotanti -->
+            <g transform="translate(${cx} ${cy})" opacity="0.5">
+                <g>
+                    <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="24s" repeatCount="indefinite"/>
+                    ${Array.from({ length: 12 }, (_, i) =>
+                        `<line x1="0" y1="-${ring2}" x2="0" y2="-${Math.round(starR * 2.1)}" stroke="#FFBF00" stroke-width="1.5" stroke-opacity="0.16" transform="rotate(${i * 30})"/>`
+                    ).join('')}
+                </g>
+            </g>
+
+            <!-- Anelli sacri -->
+            <circle cx="${cx}" cy="${cy}" r="${ring1}" fill="none" stroke="url(#gw-goldfaint)" stroke-width="1.5">
+                <animate attributeName="r" values="${Math.round(ring1 * 0.8)};${ring1};${Math.round(ring1 * 0.8)}" dur="6s" repeatCount="indefinite"/>
+                <animate attributeName="stroke-opacity" values="0.3;0.8;0.3" dur="6s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="${cx}" cy="${cy}" r="${ring2}" fill="none" stroke="url(#gw-goldfaint)" stroke-width="1">
+                <animate attributeName="r" values="${Math.round(ring2 * 0.86)};${ring2};${Math.round(ring2 * 0.86)}" dur="7s" repeatCount="indefinite"/>
+                <animate attributeName="stroke-opacity" values="0.15;0.5;0.15" dur="7s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Stella a 8 punte -->
+            <g filter="url(#gw-glow)">
+                <path d="${starD}" fill="none" stroke="url(#gw-gold)" stroke-width="3" stroke-linejoin="round"
+                      stroke-dasharray="${dashLen}" stroke-dashoffset="${dashLen}">
+                    <animate attributeName="stroke-dashoffset" from="${dashLen}" to="0" dur="2.4s" begin="0.2s" fill="freeze"/>
+                </path>
+            </g>
+            <path d="${starD}" fill="url(#gw-gold)" opacity="0">
+                <animate attributeName="opacity" from="0" to="0.22" dur="1.2s" begin="2.6s" fill="freeze"/>
+            </path>
+            <circle cx="${cx}" cy="${cy}" r="${Math.max(3, px(6))}" fill="#FFBF00" filter="url(#gw-glow)">
+                <animate attributeName="r" values="${Math.max(2, px(4))};${Math.max(4, px(9))};${Math.max(2, px(4))}" dur="3s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Scintille -->
+            <circle cx="${Math.round(cx - starR * 1.05)}" cy="${Math.round(cy - starR)}" r="3" fill="#FFBF00"><animate attributeName="opacity" values="0;1;0" dur="3.5s" begin="1s" repeatCount="indefinite"/></circle>
+            <circle cx="${Math.round(cx + starR * 1.1)}" cy="${Math.round(cy - starR * 0.9)}" r="2.5" fill="#F5F5DC"><animate attributeName="opacity" values="0;1;0" dur="4s" begin="2s" repeatCount="indefinite"/></circle>
+            <circle cx="${Math.round(cx + starR * 1.05)}" cy="${Math.round(cy + starR * 0.7)}" r="3" fill="#FFBF00"><animate attributeName="opacity" values="0;1;0" dur="3.8s" begin="0.5s" repeatCount="indefinite"/></circle>
+            <circle cx="${Math.round(cx - starR * 1.1)}" cy="${Math.round(cy + starR * 0.55)}" r="2.5" fill="#F5F5DC"><animate attributeName="opacity" values="0;1;0" dur="4.2s" begin="1.5s" repeatCount="indefinite"/></circle>
+
+            <!-- Titolo lettera per lettera -->
+            <text class="gateway-title" x="${cx}" y="${titleY}" text-anchor="middle"
+                  font-family="Cinzel, Georgia, serif" font-size="${titleF}" font-weight="700" fill="#F8F4E3" letter-spacing="1">
+                ${titleMarkup}
+            </text>
+
+            <!-- Paragrafi disclaimer -->
+            <g class="gateway-para gateway-para--1">
+                <text x="${cx}" y="${p1Y}" text-anchor="middle" font-family="Quattrocento Sans, sans-serif" font-size="${bodyF}" fill="#E9DFC9">
+                    ${paraMarkup(layout.p1L, bodyF)}
+                </text>
+            </g>
+            <g class="gateway-para gateway-para--2">
+                <text x="${cx}" y="${p2Y}" text-anchor="middle" font-family="Quattrocento Sans, sans-serif" font-size="${bodyF}" fill="#E9DFC9">
+                    ${paraMarkup(layout.p2L, bodyF)}
+                </text>
+            </g>
+            <g class="gateway-para gateway-para--muted">
+                <text x="${cx}" y="${mutedY}" text-anchor="middle" font-family="Quattrocento Sans, sans-serif" font-size="${mutedF}" fill="#A99DBA">
+                    ${paraMarkup(layout.mL, mutedF)}
+                </text>
+            </g>
+
+            <!-- Bottone Entra via foreignObject -->
+            <foreignObject x="0" y="0" width="${VW}" height="${VH}">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="gateway-foreign">
+                    <button type="button" class="mystical-button px-6 py-3 rounded-full belline-gateway__enter"
+                            id="belline-gateway-enter" disabled>Entra</button>
+                </div>
+            </foreignObject>
+        </svg>`;
     document.body.appendChild(overlay);
 
     const enter = overlay.querySelector('#belline-gateway-enter');

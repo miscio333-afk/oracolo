@@ -1672,7 +1672,7 @@ select.natal-input {
 .footer-links .nav-link:hover {
     opacity: 1;
 }
-/* ---- Gateway di ingresso (SVG animato + disclaimer) ---- */
+/* ---- Gateway di ingresso (SVG full-screen: stella + disclaimer animato) ---- */
 body.belline-gateway-lock {
     overflow: hidden;
 }
@@ -1681,14 +1681,7 @@ body.belline-gateway-lock {
     position: fixed;
     inset: 0;
     z-index: 1200;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    padding: 20px;
-    background:
-        radial-gradient(120% 90% at 50% 30%, rgba(45, 27, 69, 0.9) 0%, rgba(21, 13, 38, 0.97) 70%);
+    background: #0E0819;
     opacity: 1;
     transition: opacity 0.45s ease;
 }
@@ -1698,51 +1691,51 @@ body.belline-gateway-lock {
     pointer-events: none;
 }
 
-.belline-gateway__visual {
-    width: min(72vw, 320px);
-    height: auto;
-    pointer-events: none;
-}
-
 .belline-gateway__svg {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
 }
 
-.belline-gateway__card {
-    max-width: 480px;
+/* --- Titolo lettera per lettera --- */
+.gateway-title .gateway-letter {
+    opacity: 0;
+    animation: gateway-letter-in 0.45s ease forwards;
+}
+
+@keyframes gateway-letter-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Paragrafi disclaimer in sequenza --- */
+.gateway-para {
+    opacity: 0;
+}
+.gateway-para--1 { animation: gateway-para-in 0.8s ease forwards 4.4s; }
+.gateway-para--2 { animation: gateway-para-in 0.8s ease forwards 5.2s; }
+.gateway-para--muted { animation: gateway-para-in 0.8s ease forwards 6s; }
+
+@keyframes gateway-para-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* --- Bottone Entra dentro foreignObject --- */
+.gateway-foreign {
+    position: absolute;
+    bottom: clamp(28px, 7vh, 60px);
+    left: 0;
     width: 100%;
-    background: #F5F5DC;
-    color: #4B2E83;
-    border-radius: 28px;
-    border: 3px solid #B8860B;
-    padding: 22px 24px;
-    text-align: left;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-.belline-gateway__card p {
-    color: rgba(75, 46, 131, 0.92);
-    margin-bottom: 12px;
-    line-height: 1.55;
-    font-size: 0.95rem;
-}
-
-.belline-gateway__card p strong {
-    font-weight: 700;
-    color: #4B2E83;
-}
-
-.belline-gateway__muted {
-    font-size: 0.82rem;
-    color: rgba(75, 46, 131, 0.65);
-    margin-bottom: 14px !important;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
 }
 
 .belline-gateway__enter {
-    width: 100%;
+    pointer-events: auto;
+    width: auto;
+    min-width: 180px;
 }
 
 .belline-gateway__enter:disabled {
@@ -1760,7 +1753,8 @@ body.belline-gateway-lock {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .belline-gateway__visual { display: none; }
+    .gateway-title .gateway-letter { animation: none; opacity: 1; }
+    .gateway-para { animation: none; opacity: 1; }
     .belline-gateway__enter.is-ready { animation: none; }
     .belline-gateway { transition: none; }
 }
