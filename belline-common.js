@@ -2660,12 +2660,58 @@ function bellineShowIntro(onDone) {
     });
 }
 
+// ---- Reveal al scroll dei testi (blocco per blocco, con stagger) ----
+// Seleziona automaticamente heading e paragrafi "testo" delle pagine (esclude
+// nav/footer/gateway/intro e gli elementi che hanno già un'animazione propria),
+// aggiunge la classe .reveal e li rivela allo scroll con stagger via data-delay.
+// Rispetta prefers-reduced-motion e degrada con grazia senza IntersectionObserver.
+const REVEAL_SKIP_SELECTOR = '.site-nav, .site-footer, .particle-container, #belline-gateway, #belline-intro, .title-magic, .title-spark, .advice-reveal, .advice-paragraph-text, .guide-note, .gateway-title, .gateway-para, .nav-brand, .nav-brand-wrap, .footer-text, .footer-links, .title-spark';
+
+function bellineCollectRevealTargets() {
+    return Array.from(document.querySelectorAll('h1, h2, h3, h4, p, li'))
+        .filter((el) => {
+            const txt = (el.textContent || '').trim();
+            if (!txt) return false;
+            if (el.closest(REVEAL_SKIP_SELECTOR)) return false;
+            if (el.classList.contains('title-spark')) return false;
+            return true;
+        });
+}
+
+function initTextReveal() {
+    try { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) { /* continua */ }
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const targets = bellineCollectRevealTargets();
+    if (!targets.length) return;
+
+    targets.forEach((el) => el.classList.add('reveal'));
+
+    // Stagger per gruppo: gli elementi vicini nel DOM si rivelano in sequenza.
+    let cursor = 0;
+    const DELTA = 90;
+
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            el.classList.add('is-visible');
+            el.style.setProperty('--reveal-delay', `${Math.min(cursor, 900)}ms`);
+            cursor += DELTA;
+            obs.unobserve(el);
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+    targets.forEach((el) => observer.observe(el));
+}
+
 // Export per il browser (chiamate dalle onclick/onchange)
 // NB: setBellineMode e calculateNatalCard sono esportati dalle pagine che li definiscono (natale/narrativa).
 window.startBellineReading = startBellineReading;
 window.initializeBellineParticles = initializeBellineParticles;
 window.showBellineIntroGateway = showBellineIntroGateway;
 window.initializeMagicCursorHalo = initializeMagicCursorHalo;
+window.initTextReveal = initTextReveal;
 window.flexResetBelline = flexResetBelline;
 window.openNatalCardDetail = openNatalCardDetail;
 window.calculateNatalCard = calculateNatalCard;

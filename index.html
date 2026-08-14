@@ -16,7 +16,7 @@
     <!-- Core Libraries -->
 
     <!-- Design system condiviso -->
-    <link rel="stylesheet" href="styles.css?v=21">
+    <link rel="stylesheet" href="styles.css?v=22">
     <link rel="stylesheet" href="belline.css?v=30">
 
     <!-- Sfondo video full-screen -->
@@ -161,7 +161,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
     <script src="belline-backend.js?v=4"></script>
     <script src="belline.js?v=6"></script>
-    <script src="belline-common.js?v=33"></script>
+    <script src="belline-common.js?v=34"></script>
     <script src="belline-series.js?v=6"></script>
     <script src="belline-wallet.js?v=7"></script>
     <script src="belline-account.js?v=3"></script>
@@ -171,6 +171,7 @@
             renderBellineSeries();
             initializeBellineParticles();
             initializeMagicCursorHalo();
+            initTextReveal();
             if (typeof showBellineIntroGateway === 'function') showBellineIntroGateway();
             if (window.bellinePricing) {
                 window.bellinePricing.render(document.getElementById('belline-pricing-root'));
