@@ -10,12 +10,16 @@ import { buildRuleBasedReading, type RuleBasedReading } from '../lib/reading';
 import { generateMobileAIGeneralMessage } from '../lib/ai';
 import { useAuth } from '../lib/auth';
 import { speakWithSystemVoice, stopSystemVoice, synthesizeReading } from '../lib/tts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { IntroModal } from './IntroModal';
 
 const titles: Record<string, string> = {
   free: 'Stesa di Belline',
   narrative: 'Passato · Presente · Futuro',
   natal: 'La tua Carta Natale',
 };
+
+const INTRO_STORAGE_KEY = 'belline.mobile.intro.v1';
 
 // Metro requires static require() calls for bundled assets.
 const cardImages = {
@@ -85,6 +89,8 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
   const [cards, setCards] = useState<BellineCard[]>([]);
   const [revealed, setRevealed] = useState<number[]>([]);
   const [isBreathing, setIsBreathing] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const [introAccepted, setIntroAccepted] = useState<boolean | null>(null);
   const [birthDate, setBirthDate] = useState({ day: '', month: '', year: '' });
   const [question, setQuestion] = useState('');
   const [reading, setReading] = useState<RuleBasedReading | null>(null);
@@ -97,6 +103,12 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
   const [ttsError, setTtsError] = useState<string | null>(null);
 
   useEffect(() => {
+    void AsyncStorage.getItem(INTRO_STORAGE_KEY).then((value) => {
+      setIntroAccepted(value === '1');
+    });
+  }, []);
+
+  useEffect(() => {
     void setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'doNotMix' });
     return () => {
       audioPlayer.pause();
@@ -106,6 +118,14 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
 
   function startReading() {
     if (isBreathing) return;
+    if (introAccepted === false) {
+      setShowIntro(true);
+      return;
+    }
+    beginReading();
+  }
+
+  function beginReading() {
     if (type === 'natal') {
       const day = Number(birthDate.day);
       const month = Number(birthDate.month);
@@ -128,6 +148,13 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
       setReading(null);
       setAiParagraphs(null);
     }, 1600);
+  }
+
+  function closeIntro() {
+    setShowIntro(false);
+    setIntroAccepted(true);
+    void AsyncStorage.setItem(INTRO_STORAGE_KEY, '1');
+    beginReading();
   }
 
   function completeReading(drawnCards: BellineCard[]) {
@@ -309,6 +336,7 @@ export function ReadingScreenContent({ type, historyHref }: { type: string; hist
           <Text style={styles.breathBody}>Inspira lentamente, trattieni un istante, poi lascia andare. Le Luci attendono il tuo respiro.</Text>
         </View>
       )}
+      <IntroModal visible={showIntro} onClose={closeIntro} />
       <MysticalButton onPress={startReading}>{cards.length ? 'Nuova consultazione' : 'Inizia la consultazione'}</MysticalButton>
       {cards.length > 0 && revealed.length < cards.length && <Text style={styles.hint}>Svela ogni Luce con un tocco.</Text>}
       {cards.length > 0 && revealed.length === cards.length && <Text style={styles.complete}>✦ Tutte le Luci sono state rivelate.</Text>}

@@ -452,12 +452,25 @@ function startBellineReading() {
     if (bellineReadingBusy) return;
     bellineReadingBusy = true;
 
+    // Alla prima tiratura si presenta l'introduzione spirituale
+    if (!bellineIntroAccepted()) {
+        bellineShowIntro(() => {
+            bellineAcceptIntro();
+            bellineBeginBreath();
+        });
+        return;
+    }
+
+    bellineBeginBreath();
+}
+
+// Pausa di respiro animata prima dell'estrazione (ridotta se motion ridotto)
+function bellineBeginBreath() {
     const complete = () => {
         bellineReadingBusy = false;
         finishBellineReading();
     };
 
-    // Respiro: pausa animata prima dell'estrazione (ridotta se motion ridotto)
     const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const breathMs = reduceMotion ? 400 : 2000;
     bellineShowBreathOverlay();
@@ -2342,6 +2355,38 @@ function bellineShowDisclaimer() {
     accept.addEventListener('click', () => {
         bellineAcceptDisclaimer();
         overlay.remove();
+    });
+}
+
+// ---- Intro spirituale alla prima tiratura ----
+// Mostrata una sola volta, al primo avvio della consultazione.
+const BELLINE_INTRO_KEY = 'belline.intro.v1';
+
+function bellineIntroAccepted() {
+    try { return localStorage.getItem(BELLINE_INTRO_KEY) === '1'; } catch (e) { return false; }
+}
+
+function bellineAcceptIntro() {
+    try { localStorage.setItem(BELLINE_INTRO_KEY, '1'); } catch (e) { /* ignore */ }
+}
+
+function bellineShowIntro(onDone) {
+    const overlay = document.createElement('div');
+    overlay.id = 'belline-intro';
+    overlay.className = 'fixed inset-0 z-[1150] bg-black bg-opacity-90 flex items-center justify-center p-4';
+    overlay.innerHTML = `
+        <div class="bg-cream text-purple-900 max-w-xl w-full rounded-3xl border-4 border-yellow-600 p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
+            <h2 class="card-name text-2xl mb-3">Questa app è una porta, non la risposta.</h2>
+            <p class="text-purple-900/90 mb-4">Le carte parlano, ma sei tu che ascolti. Nessun algoritmo sostituisce il tuo intuito. Prenditi un respiro, formula la tua domanda con calma, e ricorda: ciò che vedi in queste carte è anche ciò che porti dentro.</p>
+            <p class="text-purple-900/80 italic text-sm mb-4">Buon viaggio.</p>
+            <button type="button" class="mystical-button px-6 py-3 rounded-full w-full" id="belline-intro-accept">Comincio</button>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    const accept = overlay.querySelector('#belline-intro-accept');
+    accept.addEventListener('click', () => {
+        overlay.remove();
+        if (typeof onDone === 'function') onDone();
     });
 }
 
